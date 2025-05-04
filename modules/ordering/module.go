@@ -11,7 +11,7 @@ import (
 	infraEvtHdlrs "eda-in-golang/modules/ordering/internal/infra/eventhandlers"
 	"eda-in-golang/modules/ordering/internal/infra/grpc"
 	"eda-in-golang/modules/ordering/internal/infra/postgres"
-	"eda-in-golang/modules/ordering/internal/rest"
+	"eda-in-golang/modules/ordering/internal/infra/rest"
 )
 
 type Module struct{}
