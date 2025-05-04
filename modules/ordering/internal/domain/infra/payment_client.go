@@ -1,9 +1,9 @@
-package domain
+package infra
 
 import (
 	"context"
 )
 
-type PaymentRepository interface {
+type PaymentClient interface {
 	Confirm(ctx context.Context, paymentID string) error
 }

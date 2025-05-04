@@ -14,13 +14,13 @@ import (
 )
 
 type server struct {
-	app application.App
+	app application.Usecases
 	orderingpb.UnimplementedOrderingServiceServer
 }
 
 var _ orderingpb.OrderingServiceServer = (*server)(nil)
 
-func RegisterServer(app application.App, registrar grpc.ServiceRegistrar) error {
+func RegisterServer(app application.Usecases, registrar grpc.ServiceRegistrar) error {
 	orderingpb.RegisterOrderingServiceServer(registrar, server{app: app})
 	return nil
 }

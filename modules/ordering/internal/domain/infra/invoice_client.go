@@ -1,10 +1,10 @@
-package domain
+package infra
 
 import (
 	"context"
 )
 
-type InvoiceRepository interface {
+type InvoiceClient interface {
 	Save(ctx context.Context, orderID, paymentID string, amount float64) error
 	Delete(ctx context.Context, invoiceID string) error
 }

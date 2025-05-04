@@ -11,6 +11,8 @@ type AggregateBase struct {
 	events []Event
 }
 
+var _ Aggregate = (*AggregateBase)(nil)
+
 func (a AggregateBase) GetID() string {
 	return a.ID
 }

@@ -1,8 +1,12 @@
 package domain
 
+import "eda-in-golang/internal/ddd"
+
 type OrderCreated struct {
 	Order *Order
 }
+
+var _ ddd.Event = (*OrderCreated)(nil)
 
 func (OrderCreated) EventName() string { return "ordering.OrderCreated" }
 

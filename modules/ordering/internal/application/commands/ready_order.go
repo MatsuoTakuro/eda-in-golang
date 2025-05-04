@@ -4,27 +4,27 @@ import (
 	"context"
 
 	"eda-in-golang/internal/ddd"
-	"eda-in-golang/modules/ordering/internal/domain"
+	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
 type ReadyOrder struct {
 	ID string
 }
 
-type ReadyOrderHandler struct {
-	orders          domain.OrderRepository
+type ReadyOrderCommander struct {
+	orderRepo       infra.OrderRepository
 	domainPublisher ddd.EventPublisher
 }
 
-func NewReadyOrderHandler(orders domain.OrderRepository, domainPublisher ddd.EventPublisher) ReadyOrderHandler {
-	return ReadyOrderHandler{
-		orders:          orders,
+func NewReadyOrderCommander(orderRepo infra.OrderRepository, domainPublisher ddd.EventPublisher) ReadyOrderCommander {
+	return ReadyOrderCommander{
+		orderRepo:       orderRepo,
 		domainPublisher: domainPublisher,
 	}
 }
 
-func (h ReadyOrderHandler) ReadyOrder(ctx context.Context, cmd ReadyOrder) error {
-	order, err := h.orders.Find(ctx, cmd.ID)
+func (c ReadyOrderCommander) ReadyOrder(ctx context.Context, cmd ReadyOrder) error {
+	order, err := c.orderRepo.Find(ctx, cmd.ID)
 	if err != nil {
 		return err
 	}
@@ -33,12 +33,12 @@ func (h ReadyOrderHandler) ReadyOrder(ctx context.Context, cmd ReadyOrder) error
 		return nil
 	}
 
-	if err = h.orders.Update(ctx, order); err != nil {
+	if err = c.orderRepo.Update(ctx, order); err != nil {
 		return err
 	}
 
 	// publish domain events
-	if err = h.domainPublisher.Publish(ctx, order.GetEvents()...); err != nil {
+	if err = c.domainPublisher.Publish(ctx, order.GetEvents()...); err != nil {
 		return err
 	}
 

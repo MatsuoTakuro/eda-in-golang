@@ -10,6 +10,7 @@ import (
 
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/modules/ordering/internal/domain"
+	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
 type OrderRepository struct {
@@ -17,7 +18,7 @@ type OrderRepository struct {
 	db        *sql.DB
 }
 
-var _ domain.OrderRepository = (*OrderRepository)(nil)
+var _ infra.OrderRepository = (*OrderRepository)(nil)
 
 func NewOrderRepository(tableName string, db *sql.DB) OrderRepository {
 	return OrderRepository{

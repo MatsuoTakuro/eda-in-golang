@@ -7,19 +7,20 @@ import (
 
 	"eda-in-golang/modules/depot/depotpb"
 	"eda-in-golang/modules/ordering/internal/domain"
+	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
-type ShoppingRepository struct {
+type ShoppingClient struct {
 	client depotpb.DepotServiceClient
 }
 
-var _ domain.ShoppingRepository = (*ShoppingRepository)(nil)
+var _ infra.ShoppingClient = (*ShoppingClient)(nil)
 
-func NewShoppingListRepository(conn *grpc.ClientConn) ShoppingRepository {
-	return ShoppingRepository{client: depotpb.NewDepotServiceClient(conn)}
+func NewShoppingListClient(conn *grpc.ClientConn) ShoppingClient {
+	return ShoppingClient{client: depotpb.NewDepotServiceClient(conn)}
 }
 
-func (r ShoppingRepository) Create(ctx context.Context, order *domain.Order) (string, error) {
+func (r ShoppingClient) Create(ctx context.Context, order *domain.Order) (string, error) {
 	items := make([]*depotpb.OrderItem, 0, len(order.Items))
 	for _, item := range order.Items {
 		items = append(items, r.itemFromDomain(item))
@@ -36,12 +37,12 @@ func (r ShoppingRepository) Create(ctx context.Context, order *domain.Order) (st
 	return response.GetId(), nil
 }
 
-func (r ShoppingRepository) Cancel(ctx context.Context, shoppingID string) error {
+func (r ShoppingClient) Cancel(ctx context.Context, shoppingID string) error {
 	_, err := r.client.CancelShoppingList(ctx, &depotpb.CancelShoppingListRequest{Id: shoppingID})
 	return err
 }
 
-func (r ShoppingRepository) itemFromDomain(item *domain.Item) *depotpb.OrderItem {
+func (r ShoppingClient) itemFromDomain(item *domain.Item) *depotpb.OrderItem {
 	return &depotpb.OrderItem{
 		ProductId: item.ProductID,
 		StoreId:   item.StoreID,

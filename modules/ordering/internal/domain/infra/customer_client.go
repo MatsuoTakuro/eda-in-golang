@@ -1,9 +1,9 @@
-package domain
+package infra
 
 import (
 	"context"
 )
 
-type CustomerRepository interface {
+type CustomerClient interface {
 	Authorize(ctx context.Context, customerID string) error
 }
