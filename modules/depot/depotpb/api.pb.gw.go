@@ -281,13 +281,12 @@ func RegisterDepotServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/depotpb.DepotService/CreateShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/depotpb.DepotService/CreateShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_DepotService_CreateShoppingList_0(ctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_DepotService_CreateShoppingList_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -305,13 +304,12 @@ func RegisterDepotServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/depotpb.DepotService/CancelShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/depotpb.DepotService/CancelShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_DepotService_CancelShoppingList_0(ctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_DepotService_CancelShoppingList_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -329,13 +327,12 @@ func RegisterDepotServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/depotpb.DepotService/AssignShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}/assign"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/depotpb.DepotService/AssignShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}/assign"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_DepotService_AssignShoppingList_0(ctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_DepotService_AssignShoppingList_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -353,13 +350,12 @@ func RegisterDepotServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/depotpb.DepotService/CompleteShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}/complete"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/depotpb.DepotService/CompleteShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}/complete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_DepotService_CompleteShoppingList_0(ctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_DepotService_CompleteShoppingList_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -416,13 +412,12 @@ func RegisterDepotServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/depotpb.DepotService/CreateShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/depotpb.DepotService/CreateShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DepotService_CreateShoppingList_0(ctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_DepotService_CreateShoppingList_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -437,13 +432,12 @@ func RegisterDepotServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/depotpb.DepotService/CancelShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/depotpb.DepotService/CancelShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DepotService_CancelShoppingList_0(ctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_DepotService_CancelShoppingList_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -458,13 +452,12 @@ func RegisterDepotServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/depotpb.DepotService/AssignShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}/assign"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/depotpb.DepotService/AssignShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}/assign"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DepotService_AssignShoppingList_0(ctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_DepotService_AssignShoppingList_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -479,13 +472,12 @@ func RegisterDepotServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/depotpb.DepotService/CompleteShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}/complete"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/depotpb.DepotService/CompleteShoppingList", runtime.WithHTTPPathPattern("/api/depot/shopping/{id}/complete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DepotService_CompleteShoppingList_0(ctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_DepotService_CompleteShoppingList_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)

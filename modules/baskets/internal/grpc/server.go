@@ -6,9 +6,9 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 
-	"eda-in-golang/modules/baskets/basketspb"
-	"eda-in-golang/modules/baskets/internal/application"
-	"eda-in-golang/modules/baskets/internal/domain"
+	"eda-in-golang/baskets/basketspb"
+	"eda-in-golang/baskets/internal/application"
+	"eda-in-golang/baskets/internal/domain"
 )
 
 type server struct {
@@ -85,7 +85,7 @@ func (s server) GetBasket(ctx context.Context, request *basketspb.GetBasketReque
 
 func (s server) basketFromDomain(basket *domain.Basket) *basketspb.Basket {
 	protoBasket := &basketspb.Basket{
-		Id: basket.ID,
+		Id: basket.ID(),
 	}
 
 	protoBasket.Items = make([]*basketspb.Item, 0, len(basket.Items))

@@ -3,37 +3,35 @@ package customers
 import (
 	"context"
 
+	"eda-in-golang/customers/internal/application"
+	"eda-in-golang/customers/internal/grpc"
+	"eda-in-golang/customers/internal/logging"
+	"eda-in-golang/customers/internal/postgres"
+	"eda-in-golang/customers/internal/rest"
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/monolith"
-	"eda-in-golang/modules/customers/internal/application"
-	"eda-in-golang/modules/customers/internal/grpc"
-	"eda-in-golang/modules/customers/internal/logging"
-	"eda-in-golang/modules/customers/internal/postgres"
-	"eda-in-golang/modules/customers/internal/rest"
 )
 
 type Module struct{}
 
-var _ monolith.Module = (*Module)(nil)
-
-func (m Module) Startup(ctx context.Context, srv monolith.Server) error {
+func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 	// setup Driven adapters
-	domainDispatcher := ddd.NewEventDispatcher()
-	customers := postgres.NewCustomerRepository("customers.customers", srv.DB())
+	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
+	customers := postgres.NewCustomerRepository("customers.customers", mono.DB())
 
 	// setup application
 	app := logging.LogApplicationAccess(
 		application.New(customers, domainDispatcher),
-		srv.Logger(),
+		mono.Logger(),
 	)
 
-	if err := grpc.RegisterServer(app, srv.RPC()); err != nil {
+	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {
 		return err
 	}
-	if err := rest.RegisterGateway(ctx, srv.Mux(), srv.Config().Rpc.Address()); err != nil {
+	if err := rest.RegisterGateway(ctx, mono.Mux(), mono.Config().Rpc.Address()); err != nil {
 		return err
 	}
-	if err := rest.RegisterSwagger(srv.Mux()); err != nil {
+	if err := rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
 

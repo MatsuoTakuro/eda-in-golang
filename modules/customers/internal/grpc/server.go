@@ -6,9 +6,9 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 
-	"eda-in-golang/modules/customers/customerspb"
-	"eda-in-golang/modules/customers/internal/application"
-	"eda-in-golang/modules/customers/internal/domain"
+	"eda-in-golang/customers/customerspb"
+	"eda-in-golang/customers/internal/application"
+	"eda-in-golang/customers/internal/domain"
 )
 
 type server struct {
@@ -66,7 +66,7 @@ func (s server) DisableCustomer(ctx context.Context, request *customerspb.Disabl
 
 func (s server) customerFromDomain(customer *domain.Customer) *customerspb.Customer {
 	return &customerspb.Customer{
-		Id:        customer.ID,
+		Id:        customer.ID(),
 		Name:      customer.Name,
 		SmsNumber: customer.SmsNumber,
 		Enabled:   customer.Enabled,

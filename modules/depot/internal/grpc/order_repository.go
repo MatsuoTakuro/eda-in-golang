@@ -5,8 +5,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	"eda-in-golang/modules/depot/internal/domain"
-	"eda-in-golang/modules/ordering/orderingpb"
+	"eda-in-golang/depot/internal/domain"
+	"eda-in-golang/ordering/orderingpb"
 )
 
 type OrderRepository struct {
