@@ -2,13 +2,12 @@ package grpc
 
 import (
 	"context"
+	"eda-in-golang/modules/depot/depotpb"
+	"eda-in-golang/modules/depot/internal/application"
+	"eda-in-golang/modules/depot/internal/application/commands"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
-
-	"eda-in-golang/depot/depotpb"
-	"eda-in-golang/depot/internal/application"
-	"eda-in-golang/depot/internal/application/commands"
 )
 
 type server struct {

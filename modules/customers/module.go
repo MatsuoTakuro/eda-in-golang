@@ -3,18 +3,18 @@ package customers
 import (
 	"context"
 
-	"eda-in-golang/customers/internal/application"
-	"eda-in-golang/customers/internal/grpc"
-	"eda-in-golang/customers/internal/logging"
-	"eda-in-golang/customers/internal/postgres"
-	"eda-in-golang/customers/internal/rest"
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/monolith"
+	"eda-in-golang/modules/customers/internal/application"
+	"eda-in-golang/modules/customers/internal/grpc"
+	"eda-in-golang/modules/customers/internal/logging"
+	"eda-in-golang/modules/customers/internal/postgres"
+	"eda-in-golang/modules/customers/internal/rest"
 )
 
 type Module struct{}
 
-func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
+func (m Module) Startup(ctx context.Context, mono monolith.Server) error {
 	// setup Driven adapters
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
 	customers := postgres.NewCustomerRepository("customers.customers", mono.DB())

@@ -7,7 +7,7 @@ import (
 
 	"github.com/stackus/errors"
 
-	"eda-in-golang/stores/internal/domain"
+	"eda-in-golang/modules/stores/internal/domain"
 )
 
 type MallRepository struct {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stackus/errors"
 
-	"eda-in-golang/payments/internal/models"
+	"eda-in-golang/modules/payments/internal/models"
 )
 
 type (

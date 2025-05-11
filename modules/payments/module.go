@@ -4,16 +4,16 @@ import (
 	"context"
 
 	"eda-in-golang/internal/monolith"
-	"eda-in-golang/payments/internal/application"
-	"eda-in-golang/payments/internal/grpc"
-	"eda-in-golang/payments/internal/logging"
-	"eda-in-golang/payments/internal/postgres"
-	"eda-in-golang/payments/internal/rest"
+	"eda-in-golang/modules/payments/internal/application"
+	"eda-in-golang/modules/payments/internal/grpc"
+	"eda-in-golang/modules/payments/internal/logging"
+	"eda-in-golang/modules/payments/internal/postgres"
+	"eda-in-golang/modules/payments/internal/rest"
 )
 
 type Module struct{}
 
-func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
+func (m Module) Startup(ctx context.Context, mono monolith.Server) error {
 	// setup Driven adapters
 	invoices := postgres.NewInvoiceRepository("payments.invoices", mono.DB())
 	payments := postgres.NewPaymentRepository("payments.payments", mono.DB())

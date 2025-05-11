@@ -6,9 +6,9 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 
-	"eda-in-golang/baskets/basketspb"
-	"eda-in-golang/baskets/internal/application"
-	"eda-in-golang/baskets/internal/domain"
+	"eda-in-golang/modules/baskets/basketspb"
+	"eda-in-golang/modules/baskets/internal/application"
+	"eda-in-golang/modules/baskets/internal/domain"
 )
 
 type server struct {

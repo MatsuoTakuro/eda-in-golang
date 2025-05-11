@@ -20,14 +20,14 @@ func NewShoppingListClient(conn *grpc.ClientConn) ShoppingClient {
 	return ShoppingClient{client: depotpb.NewDepotServiceClient(conn)}
 }
 
-func (r ShoppingClient) Create(ctx context.Context, order *domain.Order) (string, error) {
-	items := make([]*depotpb.OrderItem, 0, len(order.Items))
-	for _, item := range order.Items {
-		items = append(items, r.itemFromDomain(item))
+func (c ShoppingClient) Create(ctx context.Context, orderID string, orderItems []domain.Item) (string, error) {
+	items := make([]*depotpb.OrderItem, len(orderItems))
+	for i, item := range orderItems {
+		items[i] = c.itemFromDomain(item)
 	}
 
-	response, err := r.client.CreateShoppingList(ctx, &depotpb.CreateShoppingListRequest{
-		OrderId: order.ID,
+	response, err := c.client.CreateShoppingList(ctx, &depotpb.CreateShoppingListRequest{
+		OrderId: orderID,
 		Items:   items,
 	})
 	if err != nil {
@@ -37,12 +37,12 @@ func (r ShoppingClient) Create(ctx context.Context, order *domain.Order) (string
 	return response.GetId(), nil
 }
 
-func (r ShoppingClient) Cancel(ctx context.Context, shoppingID string) error {
-	_, err := r.client.CancelShoppingList(ctx, &depotpb.CancelShoppingListRequest{Id: shoppingID})
+func (c ShoppingClient) Cancel(ctx context.Context, shoppingID string) error {
+	_, err := c.client.CancelShoppingList(ctx, &depotpb.CancelShoppingListRequest{Id: shoppingID})
 	return err
 }
 
-func (r ShoppingClient) itemFromDomain(item *domain.Item) *depotpb.OrderItem {
+func (c ShoppingClient) itemFromDomain(item domain.Item) *depotpb.OrderItem {
 	return &depotpb.OrderItem{
 		ProductId: item.ProductID,
 		StoreId:   item.StoreID,

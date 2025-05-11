@@ -9,3 +9,4 @@ type ProductV1 struct {
 }
 
 func (ProductV1) SnapshotName() string { return "stores.ProductV1" }
+func (p ProductV1) Key() string        { return p.SnapshotName() }

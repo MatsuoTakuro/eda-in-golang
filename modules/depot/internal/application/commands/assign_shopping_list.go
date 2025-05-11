@@ -3,8 +3,8 @@ package commands
 import (
 	"context"
 
-	"eda-in-golang/depot/internal/domain"
 	"eda-in-golang/internal/ddd"
+	"eda-in-golang/modules/depot/internal/domain"
 )
 
 type AssignShoppingList struct {

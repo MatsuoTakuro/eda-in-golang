@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"eda-in-golang/internal/monolith"
-	"eda-in-golang/notifications/internal/application"
-	"eda-in-golang/notifications/internal/grpc"
-	"eda-in-golang/notifications/internal/logging"
+	"eda-in-golang/modules/notifications/internal/application"
+	"eda-in-golang/modules/notifications/internal/grpc"
+	"eda-in-golang/modules/notifications/internal/logging"
 )
 
 type Module struct{}
 
-func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
+func (m Module) Startup(ctx context.Context, mono monolith.Server) error {
 	// setup Driven adapters
 	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
 	if err != nil {

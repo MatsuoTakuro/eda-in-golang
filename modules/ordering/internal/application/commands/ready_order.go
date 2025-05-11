@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 
-	"eda-in-golang/internal/ddd"
 	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
@@ -12,19 +11,17 @@ type ReadyOrder struct {
 }
 
 type ReadyOrderCommander struct {
-	orderRepo       infra.OrderRepository
-	domainPublisher ddd.EventPublisher
+	orderRepo infra.OrderRepository
 }
 
-func NewReadyOrderCommander(orderRepo infra.OrderRepository, domainPublisher ddd.EventPublisher) ReadyOrderCommander {
+func NewReadyOrderCommander(orderRepo infra.OrderRepository) ReadyOrderCommander {
 	return ReadyOrderCommander{
-		orderRepo:       orderRepo,
-		domainPublisher: domainPublisher,
+		orderRepo: orderRepo,
 	}
 }
 
 func (c ReadyOrderCommander) ReadyOrder(ctx context.Context, cmd ReadyOrder) error {
-	order, err := c.orderRepo.Find(ctx, cmd.ID)
+	order, err := c.orderRepo.Load(ctx, cmd.ID)
 	if err != nil {
 		return err
 	}
@@ -33,12 +30,7 @@ func (c ReadyOrderCommander) ReadyOrder(ctx context.Context, cmd ReadyOrder) err
 		return nil
 	}
 
-	if err = c.orderRepo.Update(ctx, order); err != nil {
-		return err
-	}
-
-	// publish domain events
-	if err = c.domainPublisher.Publish(ctx, order.GetEvents()...); err != nil {
+	if err = c.orderRepo.Save(ctx, order); err != nil {
 		return err
 	}
 

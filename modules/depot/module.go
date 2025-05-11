@@ -3,19 +3,19 @@ package depot
 import (
 	"context"
 
-	"eda-in-golang/depot/internal/application"
-	"eda-in-golang/depot/internal/grpc"
-	"eda-in-golang/depot/internal/handlers"
-	"eda-in-golang/depot/internal/logging"
-	"eda-in-golang/depot/internal/postgres"
-	"eda-in-golang/depot/internal/rest"
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/monolith"
+	"eda-in-golang/modules/depot/internal/application"
+	"eda-in-golang/modules/depot/internal/grpc"
+	"eda-in-golang/modules/depot/internal/handlers"
+	"eda-in-golang/modules/depot/internal/logging"
+	"eda-in-golang/modules/depot/internal/postgres"
+	"eda-in-golang/modules/depot/internal/rest"
 )
 
 type Module struct{}
 
-func (Module) Startup(ctx context.Context, mono monolith.Monolith) error {
+func (Module) Startup(ctx context.Context, mono monolith.Server) error {
 	// setup Driven adapters
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
 	shoppingLists := postgres.NewShoppingListRepository("depot.shopping_lists", mono.DB())

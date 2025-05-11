@@ -6,6 +6,6 @@ import (
 )
 
 type ShoppingClient interface {
-	Create(ctx context.Context, order *domain.Order) (string, error)
+	Create(ctx context.Context, orderID string, items []domain.Item) (string, error)
 	Cancel(ctx context.Context, shoppingID string) error
 }

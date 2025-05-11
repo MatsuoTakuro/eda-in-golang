@@ -5,7 +5,6 @@ import (
 
 	"github.com/stackus/errors"
 
-	"eda-in-golang/internal/ddd"
 	"eda-in-golang/modules/ordering/internal/domain"
 	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
@@ -14,61 +13,59 @@ type CreateOrder struct {
 	ID         string
 	CustomerID string
 	PaymentID  string
-	Items      []*domain.Item
+	Items      []domain.Item
 }
 
 type CreateOrderCommander struct {
-	orderRepo       infra.OrderRepository
-	customerClient  infra.CustomerClient
-	paymentClient   infra.PaymentClient
-	shoppingClient  infra.ShoppingClient
-	domainPublisher ddd.EventPublisher
+	orderRepo   infra.OrderRepository
+	customerCli infra.CustomerClient
+	paymentCli  infra.PaymentClient
+	shoppingCli infra.ShoppingClient
 }
 
 func NewCreateOrderCommander(orderRepo infra.OrderRepository,
-	customerClient infra.CustomerClient,
-	paymentClient infra.PaymentClient,
-	shoppingClient infra.ShoppingClient,
-	domainPublisher ddd.EventPublisher,
+	customerCli infra.CustomerClient,
+	paymentCli infra.PaymentClient,
+	shoppingCli infra.ShoppingClient,
 ) CreateOrderCommander {
 	return CreateOrderCommander{
-		orderRepo:       orderRepo,
-		customerClient:  customerClient,
-		paymentClient:   paymentClient,
-		shoppingClient:  shoppingClient,
-		domainPublisher: domainPublisher,
+		orderRepo:   orderRepo,
+		customerCli: customerCli,
+		paymentCli:  paymentCli,
+		shoppingCli: shoppingCli,
 	}
 }
 
 func (c CreateOrderCommander) CreateOrder(ctx context.Context, cmd CreateOrder) error {
-	order, err := domain.CreateOrder(cmd.ID, cmd.CustomerID, cmd.PaymentID, cmd.Items)
+	order, err := c.orderRepo.Load(ctx, cmd.ID)
 	if err != nil {
-		return errors.Wrap(err, "create order command")
+		return err
 	}
 
 	// authorizeCustomer
-	if err = c.customerClient.Authorize(ctx, order.CustomerID); err != nil {
+	if err = c.customerCli.Authorize(ctx, cmd.CustomerID); err != nil {
 		return errors.Wrap(err, "order customer authorization")
 	}
 
 	// validatePayment
-	if err = c.paymentClient.Confirm(ctx, order.PaymentID); err != nil {
+	if err = c.paymentCli.Confirm(ctx, cmd.PaymentID); err != nil {
 		return errors.Wrap(err, "order payment confirmation")
 	}
 
 	// scheduleShopping
-	if order.ShoppingID, err = c.shoppingClient.Create(ctx, order); err != nil {
+	var shoppingID string
+	if shoppingID, err = c.shoppingCli.Create(ctx, cmd.ID, cmd.Items); err != nil {
 		return errors.Wrap(err, "order shopping scheduling")
+	}
+
+	err = order.CreateOrder(cmd.ID, cmd.CustomerID, cmd.PaymentID, shoppingID, cmd.Items)
+	if err != nil {
+		return errors.Wrap(err, "create order command")
 	}
 
 	// orderCreation
 	if err = c.orderRepo.Save(ctx, order); err != nil {
 		return errors.Wrap(err, "order creation")
-	}
-
-	// publish domain events
-	if err = c.domainPublisher.Publish(ctx, order.GetEvents()...); err != nil {
-		return err
 	}
 
 	return nil

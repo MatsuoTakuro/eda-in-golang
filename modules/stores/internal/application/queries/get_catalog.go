@@ -3,7 +3,7 @@ package queries
 import (
 	"context"
 
-	"eda-in-golang/stores/internal/domain"
+	"eda-in-golang/modules/stores/internal/domain"
 )
 
 type GetCatalog struct {

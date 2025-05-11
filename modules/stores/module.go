@@ -8,20 +8,20 @@ import (
 	"eda-in-golang/internal/monolith"
 	pg "eda-in-golang/internal/postgres"
 	"eda-in-golang/internal/registry"
-	"eda-in-golang/internal/registry/serdes"
-	"eda-in-golang/stores/internal/application"
-	"eda-in-golang/stores/internal/domain"
-	"eda-in-golang/stores/internal/grpc"
-	"eda-in-golang/stores/internal/handlers"
-	"eda-in-golang/stores/internal/logging"
-	"eda-in-golang/stores/internal/postgres"
-	"eda-in-golang/stores/internal/rest"
+	"eda-in-golang/internal/registry/registrar"
+	"eda-in-golang/modules/stores/internal/application"
+	"eda-in-golang/modules/stores/internal/domain"
+	"eda-in-golang/modules/stores/internal/grpc"
+	"eda-in-golang/modules/stores/internal/handlers"
+	"eda-in-golang/modules/stores/internal/logging"
+	"eda-in-golang/modules/stores/internal/postgres"
+	"eda-in-golang/modules/stores/internal/rest"
 )
 
 type Module struct {
 }
 
-func (m *Module) Startup(ctx context.Context, mono monolith.Monolith) error {
+func (m *Module) Startup(ctx context.Context, mono monolith.Server) error {
 	// setup Driven adapters
 	reg := registry.New()
 	err := registrations(reg)
@@ -31,8 +31,8 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
 	aggregateStore := es.AggregateStoreWithMiddleware(
 		pg.NewEventStore("stores.events", mono.DB(), reg),
-		es.NewEventPublisher(domainDispatcher),
-		pg.NewSnapshotStore("stores.snapshots", mono.DB(), reg),
+		es.WithEventPublisher(domainDispatcher),
+		pg.WithSnapshotStore("stores.snapshots", mono.DB(), reg),
 	)
 	stores := es.NewAggregateRepository[*domain.Store](domain.StoreAggregate, reg, aggregateStore)
 	products := es.NewAggregateRepository[*domain.Product](domain.ProductAggregate, reg, aggregateStore)
@@ -70,7 +70,7 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 }
 
 func registrations(reg registry.Registry) (err error) {
-	serde := serdes.NewJsonSerde(reg)
+	serde := registrar.NewJsonRegistrar(reg)
 
 	// Store
 	if err = serde.Register(domain.Store{}, func(v any) error {
@@ -84,17 +84,17 @@ func registrations(reg registry.Registry) (err error) {
 	if err = serde.Register(domain.StoreCreated{}); err != nil {
 		return
 	}
-	if err = serde.RegisterKey(domain.StoreParticipationEnabledEvent, domain.StoreParticipationToggled{}); err != nil {
+	if err = serde.RegisterWithKey(domain.StoreParticipationEnabledEvent, domain.StoreParticipationToggled{}); err != nil {
 		return
 	}
-	if err = serde.RegisterKey(domain.StoreParticipationDisabledEvent, domain.StoreParticipationToggled{}); err != nil {
+	if err = serde.RegisterWithKey(domain.StoreParticipationDisabledEvent, domain.StoreParticipationToggled{}); err != nil {
 		return
 	}
 	if err = serde.Register(domain.StoreRebranded{}); err != nil {
 		return
 	}
 	// store snapshots
-	if err = serde.RegisterKey(domain.StoreV1{}.SnapshotName(), domain.StoreV1{}); err != nil {
+	if err = serde.Register(domain.StoreV1{}); err != nil {
 		return
 	}
 
@@ -113,17 +113,17 @@ func registrations(reg registry.Registry) (err error) {
 	if err = serde.Register(domain.ProductRebranded{}); err != nil {
 		return
 	}
-	if err = serde.RegisterKey(domain.ProductPriceIncreasedEvent, domain.ProductPriceChanged{}); err != nil {
+	if err = serde.RegisterWithKey(domain.ProductPriceIncreasedEvent, domain.ProductPriceChanged{}); err != nil {
 		return
 	}
-	if err = serde.RegisterKey(domain.ProductPriceDecreasedEvent, domain.ProductPriceChanged{}); err != nil {
+	if err = serde.RegisterWithKey(domain.ProductPriceDecreasedEvent, domain.ProductPriceChanged{}); err != nil {
 		return
 	}
 	if err = serde.Register(domain.ProductRemoved{}); err != nil {
 		return
 	}
 	// product snapshots
-	if err = serde.RegisterKey(domain.ProductV1{}.SnapshotName(), domain.ProductV1{}); err != nil {
+	if err = serde.Register(domain.ProductV1{}); err != nil {
 		return
 	}
 

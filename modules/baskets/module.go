@@ -3,23 +3,23 @@ package baskets
 import (
 	"context"
 
-	"eda-in-golang/baskets/internal/application"
-	"eda-in-golang/baskets/internal/domain"
-	"eda-in-golang/baskets/internal/grpc"
-	"eda-in-golang/baskets/internal/handlers"
-	"eda-in-golang/baskets/internal/logging"
-	"eda-in-golang/baskets/internal/rest"
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/es"
 	"eda-in-golang/internal/monolith"
 	pg "eda-in-golang/internal/postgres"
 	"eda-in-golang/internal/registry"
-	"eda-in-golang/internal/registry/serdes"
+	"eda-in-golang/internal/registry/registrar"
+	"eda-in-golang/modules/baskets/internal/application"
+	"eda-in-golang/modules/baskets/internal/domain"
+	"eda-in-golang/modules/baskets/internal/grpc"
+	"eda-in-golang/modules/baskets/internal/handlers"
+	"eda-in-golang/modules/baskets/internal/logging"
+	"eda-in-golang/modules/baskets/internal/rest"
 )
 
 type Module struct{}
 
-func (m *Module) Startup(ctx context.Context, mono monolith.Monolith) (err error) {
+func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 	// setup Driven adapters
 	reg := registry.New()
 	err = registrations(reg)
@@ -29,8 +29,8 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Monolith) (err error
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
 	aggregateStore := es.AggregateStoreWithMiddleware(
 		pg.NewEventStore("baskets.events", mono.DB(), reg),
-		es.NewEventPublisher(domainDispatcher),
-		pg.NewSnapshotStore("baskets.snapshots", mono.DB(), reg),
+		es.WithEventPublisher(domainDispatcher),
+		pg.WithSnapshotStore("baskets.snapshots", mono.DB(), reg),
 	)
 	baskets := es.NewAggregateRepository[*domain.Basket](domain.BasketAggregate, reg, aggregateStore)
 	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
@@ -67,11 +67,12 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Monolith) (err error
 }
 
 func registrations(reg registry.Registry) error {
-	serde := serdes.NewJsonSerde(reg)
+	serde := registrar.NewJsonRegistrar(reg)
 
 	// Basket
 	if err := serde.Register(domain.Basket{}, func(v interface{}) error {
 		basket := v.(*domain.Basket)
+		basket.Aggregate = es.NewAggregate("", domain.BasketAggregate)
 		basket.Items = make(map[string]domain.Item)
 		return nil
 	}); err != nil {
@@ -94,7 +95,7 @@ func registrations(reg registry.Registry) error {
 		return err
 	}
 	// basket snapshots
-	if err := serde.RegisterKey(domain.BasketV1{}.SnapshotName(), domain.BasketV1{}); err != nil {
+	if err := serde.Register(domain.BasketV1{}); err != nil {
 		return err
 	}
 

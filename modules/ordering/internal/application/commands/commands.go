@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"eda-in-golang/internal/ddd"
 	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
@@ -22,12 +21,11 @@ type commands struct {
 
 func New(orderRepo infra.OrderRepository,
 	customerClient infra.CustomerClient, paymentClient infra.PaymentClient, shoppingClient infra.ShoppingClient,
-	domainPublisher ddd.EventPublisher,
 ) Commands {
 	return &commands{
-		CreateOrderCommander:   NewCreateOrderCommander(orderRepo, customerClient, paymentClient, shoppingClient, domainPublisher),
-		CancelOrderCommander:   NewCancelOrderCommander(orderRepo, shoppingClient, domainPublisher),
-		ReadyOrderCommander:    NewReadyOrderCommander(orderRepo, domainPublisher),
-		CompleteOrderCommander: NewCompleteOrderCommander(orderRepo, domainPublisher),
+		CreateOrderCommander:   NewCreateOrderCommander(orderRepo, customerClient, paymentClient, shoppingClient),
+		CancelOrderCommander:   NewCancelOrderCommander(orderRepo, shoppingClient),
+		ReadyOrderCommander:    NewReadyOrderCommander(orderRepo),
+		CompleteOrderCommander: NewCompleteOrderCommander(orderRepo),
 	}
 }

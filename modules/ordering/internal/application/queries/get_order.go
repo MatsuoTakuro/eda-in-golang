@@ -22,7 +22,7 @@ func NewGetOrderHandler(orderRepo infra.OrderRepository) GetOrderHandler {
 }
 
 func (h GetOrderHandler) GetOrder(ctx context.Context, query GetOrder) (*domain.Order, error) {
-	order, err := h.orderRepo.Find(ctx, query.ID)
+	order, err := h.orderRepo.Load(ctx, query.ID)
 
 	return order, errors.Wrap(err, "get order query")
 }

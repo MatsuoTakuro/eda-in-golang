@@ -7,3 +7,5 @@ type StoreV1 struct {
 }
 
 func (StoreV1) SnapshotName() string { return "stores.StoreV1" }
+
+func (s StoreV1) Key() string { return s.SnapshotName() }

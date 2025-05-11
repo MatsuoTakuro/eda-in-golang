@@ -5,43 +5,48 @@ import (
 	"sync"
 )
 
-type EventDispatcher interface {
-	EventSubscriber
-	EventPublisher
+// EventDispatcher combines subscription and publication capabilities for domain events.
+type EventDispatcher[T Event] interface {
+	EventSubscriber[T]
+	EventPublisher[T]
 }
 
-type EventSubscriber interface {
-	Subscribe(event Event, handler EventHandler)
+// EventSubscriber allows registering event handlers by event name.
+type EventSubscriber[T Event] interface {
+	Subscribe(name string, handler EventHandler[T])
 }
 
-type EventPublisher interface {
-	Publish(ctx context.Context, events ...Event) error
+// EventPublisher defines how to publish one or more events to registered handlers.
+type EventPublisher[T Event] interface {
+	Publish(ctx context.Context, events ...T) error
 }
 
-type eventDispatcher struct {
-	handlers map[string][]EventHandler
+type eventDispatcher[T Event] struct {
+	handlers map[string][]EventHandler[T]
 	mu       sync.Mutex
 }
 
-var _ EventDispatcher = (*eventDispatcher)(nil)
+var _ EventDispatcher[Event] = (*eventDispatcher[Event])(nil)
 
-func NewEventDispatcher() EventDispatcher {
-	return &eventDispatcher{
-		handlers: make(map[string][]EventHandler),
+// NewEventDispatcher creates a new domain event dispatcher instance.
+func NewEventDispatcher[T Event]() *eventDispatcher[T] {
+	return &eventDispatcher[T]{
+		handlers: make(map[string][]EventHandler[T]),
 	}
 }
 
-func (h *eventDispatcher) Subscribe(event Event, handler EventHandler) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+func (d *eventDispatcher[T]) Subscribe(name string, handler EventHandler[T]) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
-	h.handlers[event.EventName()] = append(h.handlers[event.EventName()], handler)
+	d.handlers[name] = append(d.handlers[name], handler)
 }
 
-func (h *eventDispatcher) Publish(ctx context.Context, events ...Event) error {
+func (d *eventDispatcher[T]) Publish(ctx context.Context, events ...T) error {
 	for _, event := range events {
-		for _, handler := range h.handlers[event.EventName()] {
-			err := handler(ctx, event)
+		// For now, synchronously invoke all handlers registered for this event
+		for _, h := range d.handlers[event.EventName()] {
+			err := h.HandleEvent(ctx, event)
 			if err != nil {
 				return err
 			}

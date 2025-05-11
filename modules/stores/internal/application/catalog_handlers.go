@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"eda-in-golang/internal/ddd"
-	"eda-in-golang/stores/internal/domain"
+	"eda-in-golang/modules/stores/internal/domain"
 )
 
 type CatalogHandlers[T ddd.AggregateEvent] struct {

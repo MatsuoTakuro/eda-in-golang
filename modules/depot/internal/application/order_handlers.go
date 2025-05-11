@@ -3,8 +3,8 @@ package application
 import (
 	"context"
 
-	"eda-in-golang/depot/internal/domain"
 	"eda-in-golang/internal/ddd"
+	"eda-in-golang/modules/depot/internal/domain"
 )
 
 type OrderHandlers[T ddd.AggregateEvent] struct {

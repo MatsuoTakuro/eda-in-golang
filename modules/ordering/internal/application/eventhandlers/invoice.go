@@ -8,23 +8,27 @@ import (
 	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
-type Invoice interface {
-	OnOrderReadiedEventHandler
-}
-
-type invoice struct {
+type invoice[T ddd.AggregateEvent] struct {
 	client infra.InvoiceClient
 }
 
-var _ Invoice = (*invoice)(nil)
+var _ ddd.EventHandler[ddd.AggregateEvent] = (*invoice[ddd.AggregateEvent])(nil)
 
-func NewInvoice(client infra.InvoiceClient) Invoice {
-	return &invoice{
+func NewInvoice(client infra.InvoiceClient) *invoice[ddd.AggregateEvent] {
+	return &invoice[ddd.AggregateEvent]{
 		client: client,
 	}
 }
 
-func (h invoice) OnOrderReadied(ctx context.Context, event ddd.Event) error {
-	orderReadied := event.(*domain.OrderReadied)
-	return h.client.Save(ctx, orderReadied.Order.ID, orderReadied.Order.PaymentID, orderReadied.Order.GetTotal())
+func (h *invoice[T]) HandleEvent(ctx context.Context, event T) error {
+	switch event.EventName() {
+	case domain.OrderReadiedEvent:
+		return h.onOrderReadied(ctx, event)
+	}
+	return nil
+}
+
+func (h invoice[T]) onOrderReadied(ctx context.Context, event ddd.AggregateEvent) error {
+	orderReadied := event.Payload().(*domain.OrderReadied)
+	return h.client.Save(ctx, event.AggregateID(), orderReadied.PaymentID, orderReadied.Total)
 }
