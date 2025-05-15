@@ -13,7 +13,6 @@ import (
 	"eda-in-golang/modules/ordering/internal/application/eventhandlers"
 	"eda-in-golang/modules/ordering/internal/application/logging"
 	"eda-in-golang/modules/ordering/internal/domain"
-	infraEvtHdlrs "eda-in-golang/modules/ordering/internal/infra/eventhandlers"
 	"eda-in-golang/modules/ordering/internal/infra/grpc"
 	"eda-in-golang/modules/ordering/internal/infra/rest"
 )
@@ -74,8 +73,8 @@ func (Module) Startup(ctx context.Context, srv monolith.Server) error {
 	if err := rest.RegisterSwagger(srv.Mux()); err != nil {
 		return err
 	}
-	infraEvtHdlrs.SubscribeForNotification(notificationEventHdlrs, domainDispatcher)
-	infraEvtHdlrs.SubscribeForInvoice(invoiceEventHdlrs, domainDispatcher)
+	eventhandlers.SubscribeForNotification(notificationEventHdlrs, domainDispatcher)
+	eventhandlers.SubscribeForInvoice(invoiceEventHdlrs, domainDispatcher)
 
 	return nil
 }
