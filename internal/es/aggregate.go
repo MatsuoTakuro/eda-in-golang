@@ -12,7 +12,9 @@ type Aggregate interface {
 }
 
 type Versioner interface {
+	// Version returns the current committed version of the aggregate.
 	Version() int
+	// PendingVersion returns the version the aggregate will have after uncommitted events are applied.
 	PendingVersion() int
 }
 

@@ -22,6 +22,7 @@ func WithEventPublisher(publisher ddd.EventPublisher[ddd.AggregateEvent]) Aggreg
 	}
 }
 
+// Save saves the aggregate to the store and then publishes its events.
 func (p eventPublisher) Save(ctx context.Context, aggregate EventSourcedAggregate) error {
 	if err := p.AggregateStore.Save(ctx, aggregate); err != nil {
 		return err

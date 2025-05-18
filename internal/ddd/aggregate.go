@@ -17,8 +17,12 @@ type AggregateNamer interface {
 }
 
 type Eventer interface {
+	// AddEvent adds an event to the aggregate. The event is to be committed later.
 	AddEvent(string, EventPayload, ...EventOption)
+	// Events returns the events that have been added to the aggregate but not yet committed.
 	Events() []AggregateEvent
+	// ClearEvents clears the events that have been added to the aggregate.
+	// It is called after the events have been committed to the store and the version of the aggregate has been updated.
 	ClearEvents()
 }
 

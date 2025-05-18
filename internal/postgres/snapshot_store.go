@@ -31,6 +31,7 @@ func WithSnapshotStore(tableName string, db *sql.DB, registry registry.Registry)
 	}
 }
 
+// Load loads the aggregate from the store and applies the snapshot to it.
 func (s snapshotStore) Load(ctx context.Context, aggregate es.EventSourcedAggregate) error {
 	const query = `SELECT stream_version, snapshot_name, snapshot_data FROM %s WHERE stream_id = $1 AND stream_name = $2 LIMIT 1`
 
@@ -57,6 +58,7 @@ func (s snapshotStore) Load(ctx context.Context, aggregate es.EventSourcedAggreg
 	return s.AggregateStore.Load(ctx, aggregate)
 }
 
+// Save saves the aggregate to the store and then saves its snapshot if needed.
 func (s snapshotStore) Save(ctx context.Context, aggregate es.EventSourcedAggregate) error {
 	const query = `INSERT INTO %s (stream_id, stream_name, stream_version, snapshot_name, snapshot_data) 
 VALUES ($1, $2, $3, $4, $5) 
@@ -94,9 +96,10 @@ func (snapshotStore) shouldSnapshot(aggregate es.EventSourcedAggregate) bool {
 	var pendingVersion = aggregate.PendingVersion()
 	var pendingChanges = len(aggregate.Events())
 
-	return pendingVersion >= maxChanges && ((pendingChanges >= maxChanges) ||
-		(pendingVersion%maxChanges < pendingChanges) ||
-		(pendingVersion%maxChanges == 0))
+	return pendingVersion >= maxChanges &&
+		((pendingChanges >= maxChanges) ||
+			(pendingVersion%maxChanges < pendingChanges) ||
+			(pendingVersion%maxChanges == 0))
 }
 
 func (s snapshotStore) table(query string) string {

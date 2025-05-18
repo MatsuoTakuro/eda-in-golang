@@ -28,6 +28,7 @@ func NewEventStore(tableName string, db *sql.DB, registry registry.Registry) eve
 	}
 }
 
+// Load loads the aggregate from the event store and applies the events to it.
 func (s eventStore) Load(ctx context.Context, aggregate es.EventSourcedAggregate) (err error) {
 	const query = `SELECT stream_version, event_id, event_name, event_data, occurred_at FROM %s WHERE stream_id = $1 AND stream_name = $2 AND stream_version > $3 ORDER BY stream_version ASC`
 
@@ -80,6 +81,7 @@ func (s eventStore) Load(ctx context.Context, aggregate es.EventSourcedAggregate
 	return nil
 }
 
+// Save saves all uncommitted events of the aggregate to the event store.
 func (s eventStore) Save(ctx context.Context, aggregate es.EventSourcedAggregate) (err error) {
 	const query = `INSERT INTO %s (stream_id, stream_name, stream_version, event_id, event_name, event_data, occurred_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 

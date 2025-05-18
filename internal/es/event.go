@@ -17,9 +17,12 @@ type EventApplier interface {
 }
 
 type EventCommitter interface {
+	// CommitEvents updates the version of the aggregate and clears the events.
+	// It must be called after all events that were added to the aggregate have been saved to the store.
 	CommitEvents()
 }
 
+// LoadEvent applies an event to an aggregate. It is used to rebuild the state of an aggregate from its events.
 func LoadEvent(v interface{}, event ddd.AggregateEvent) error {
 	type loader interface {
 		EventApplier
