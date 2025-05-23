@@ -2,10 +2,11 @@ package grpc
 
 import (
 	"context"
-	"eda-in-golang/modules/depot/internal/domain"
-	"eda-in-golang/modules/ordering/orderingpb"
 
 	"google.golang.org/grpc"
+
+	"eda-in-golang/modules/depot/internal/domain"
+	"eda-in-golang/modules/ordering/orderingpb"
 )
 
 type OrderRepository struct {

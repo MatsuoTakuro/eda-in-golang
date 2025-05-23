@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -21,6 +22,8 @@ import (
 type mono struct {
 	cfg     config.AppConfig
 	db      *sql.DB
+	nc      *nats.Conn
+	js      nats.JetStreamContext
 	logger  zerolog.Logger
 	modules []monolith.Module
 	mux     *chi.Mux
@@ -36,6 +39,10 @@ func (m *mono) Config() config.AppConfig {
 
 func (m *mono) DB() *sql.DB {
 	return m.db
+}
+
+func (m *mono) JS() nats.JetStreamContext {
+	return m.js
 }
 
 func (m *mono) Logger() zerolog.Logger {
@@ -128,4 +135,23 @@ func (m *mono) runRPC(ctx context.Context) error {
 	})
 
 	return group.Wait()
+}
+
+func (m *mono) runStream(ctx context.Context) error {
+	closed := make(chan struct{})
+	m.nc.SetClosedHandler(func(*nats.Conn) { // when the connection is closed (3)
+		close(closed) // close the channel (4)
+	})
+	group, gCtx := errgroup.WithContext(ctx)
+	group.Go(func() error {
+		fmt.Println("message stream started")       // start the message stream (1)
+		defer fmt.Println("message stream stopped") // stop the message stream (6)
+		<-closed                                    // wait for the connection to be closed (5)
+		return nil
+	})
+	group.Go(func() error {
+		<-gCtx.Done() // wait for the context to be done or cancelled (2)
+		return m.nc.Drain()
+	})
+	return group.Wait() // wait for the group to finish (7)
 }

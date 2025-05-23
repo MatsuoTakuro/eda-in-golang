@@ -6,11 +6,13 @@ import (
 )
 
 func SubscribeForInvoice(invoiceHandler ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]) {
-	domainSubscriber.Subscribe(domain.OrderReadiedEvent, invoiceHandler)
+	domainSubscriber.Subscribe(invoiceHandler, domain.OrderReadiedEvent)
 }
 
 func SubscribeForNotification(notificationHandler ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]) {
-	domainSubscriber.Subscribe(domain.OrderCreatedEvent, notificationHandler)
-	domainSubscriber.Subscribe(domain.OrderReadiedEvent, notificationHandler)
-	domainSubscriber.Subscribe(domain.OrderCanceledEvent, notificationHandler)
+	domainSubscriber.Subscribe(notificationHandler,
+		domain.OrderCreatedEvent,
+		domain.OrderReadiedEvent,
+		domain.OrderCanceledEvent,
+	)
 }

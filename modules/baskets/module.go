@@ -3,8 +3,10 @@ package baskets
 import (
 	"context"
 
+	"eda-in-golang/internal/am"
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/es"
+	"eda-in-golang/internal/jetstream"
 	"eda-in-golang/internal/monolith"
 	pg "eda-in-golang/internal/postgres"
 	"eda-in-golang/internal/registry"
@@ -15,6 +17,7 @@ import (
 	"eda-in-golang/modules/baskets/internal/handlers"
 	"eda-in-golang/modules/baskets/internal/logging"
 	"eda-in-golang/modules/baskets/internal/rest"
+	"eda-in-golang/modules/stores/storespb"
 )
 
 type Module struct{}
@@ -22,10 +25,13 @@ type Module struct{}
 func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 	// setup Driven adapters
 	reg := registry.New()
-	err = registrations(reg)
-	if err != nil {
+	if err = registrations(reg); err != nil {
 		return err
 	}
+	if err = storespb.Registrations(reg); err != nil {
+		return err
+	}
+	eventStream := am.NewEventStream(reg, jetstream.NewStream(mono.Config().Nats.Stream, mono.JS()))
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
 	aggregateStore := es.AggregateStoreWithMiddleware(
 		pg.NewEventStore("baskets.events", mono.DB(), reg),
@@ -46,56 +52,69 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 		application.New(baskets, stores, products, orders),
 		mono.Logger(),
 	)
-	orderHandlers := logging.LogEventHandlerAccess[ddd.AggregateEvent](
+	orderHandlers := logging.LogEventHandlerAccess(
 		application.NewOrderHandlers(orders),
 		"Order", mono.Logger(),
 	)
+	storeHandler := logging.LogEventHandlerAccess(
+		application.NewStoreHandler(mono.Logger()),
+		"Store", mono.Logger(),
+	)
+	productHandlers := logging.LogEventHandlerAccess(
+		application.NewProductHandlers(mono.Logger()),
+		"Product", mono.Logger(),
+	)
 
 	// setup Driver adapters
-	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {
+	if err = grpc.RegisterServer(app, mono.RPC()); err != nil {
 		return err
 	}
-	if err := rest.RegisterGateway(ctx, mono.Mux(), mono.Config().Rpc.Address()); err != nil {
+	if err = rest.RegisterGateway(ctx, mono.Mux(), mono.Config().Rpc.Address()); err != nil {
 		return err
 	}
-	if err := rest.RegisterSwagger(mono.Mux()); err != nil {
+	if err = rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
 	handlers.RegisterOrderHandlers(orderHandlers, domainDispatcher)
+	if err = handlers.RegisterStoreHandler(storeHandler, eventStream); err != nil {
+		return err
+	}
+	if err = handlers.RegisterProductHandlers(productHandlers, eventStream); err != nil {
+		return err
+	}
 
 	return
 }
 
 func registrations(reg registry.Registry) error {
-	serde := registrar.NewJsonRegistrar(reg)
+	regtr := registrar.NewJsonRegistrar(reg)
 
 	// Basket
-	if err := serde.Register(domain.Basket{}, func(v interface{}) error {
+	if err := regtr.Register(domain.Basket{}, func(v interface{}) error {
 		basket := v.(*domain.Basket)
-		basket.Aggregate = es.NewAggregate("", domain.BasketAggregate)
 		basket.Items = make(map[string]domain.Item)
 		return nil
 	}); err != nil {
 		return err
 	}
 	// basket events
-	if err := serde.Register(domain.BasketStarted{}); err != nil {
+	if err := regtr.Register(domain.BasketStarted{}); err != nil {
 		return err
 	}
-	if err := serde.Register(domain.BasketCanceled{}); err != nil {
+	if err := regtr.Register(domain.BasketCanceled{}); err != nil {
 		return err
 	}
-	if err := serde.Register(domain.BasketCheckedOut{}); err != nil {
+	if err := regtr.Register(domain.BasketCheckedOut{}); err != nil {
 		return err
 	}
-	if err := serde.Register(domain.BasketItemAdded{}); err != nil {
+	if err := regtr.Register(domain.BasketItemAdded{}); err != nil {
 		return err
 	}
-	if err := serde.Register(domain.BasketItemRemoved{}); err != nil {
+	if err := regtr.Register(domain.BasketItemRemoved{}); err != nil {
 		return err
 	}
 	// basket snapshots
-	if err := serde.Register(domain.BasketV1{}); err != nil {
+	if err := regtr.RegisterWithKey(domain.BasketV1{}.SnapshotName(), domain.BasketV1{}); err != nil {
 		return err
 	}
 

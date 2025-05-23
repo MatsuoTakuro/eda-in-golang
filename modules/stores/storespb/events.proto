@@ -1,0 +1,47 @@
+// Here is integration events defined for the Store Management module.
+// These are public, stable, and consumed by other modules.
+// Unlike domain events, they are decoupled from internal logic
+// and should not include gRPC request/response types.
+syntax = "proto3";
+
+package storespb;
+
+message StoreCreated {
+  string id = 1;
+  string name = 2;
+  string location = 3;
+}
+
+message StoreParticipationToggled {
+  string id = 1;
+  bool participating = 2;
+}
+
+message StoreRebranded {
+  string id = 1;
+  string name = 2;
+}
+
+message ProductAdded {
+  string id = 1;
+  string store_id = 2;
+  string name = 3;
+  string description = 4;
+  string sku = 5;
+  double price = 6;
+}
+
+message ProductRebranded {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message ProductPriceChanged {
+  string id = 1;
+  double delta = 2;
+}
+
+message ProductRemoved {
+  string id = 1;
+}

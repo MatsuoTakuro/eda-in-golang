@@ -3,11 +3,12 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"eda-in-golang/modules/depot/internal/domain"
 	"encoding/json"
 	"fmt"
 
 	"github.com/stackus/errors"
+
+	"eda-in-golang/modules/depot/internal/domain"
 )
 
 type ShoppingListRepository struct {

@@ -13,7 +13,7 @@ type EventDispatcher[T Event] interface {
 
 // EventSubscriber allows registering event handlers by event name.
 type EventSubscriber[T Event] interface {
-	Subscribe(name string, handler EventHandler[T])
+	Subscribe(handler EventHandler[T], events ...string)
 }
 
 // EventPublisher defines how to publish one or more events to registered handlers.
@@ -22,8 +22,13 @@ type EventPublisher[T Event] interface {
 }
 
 type eventDispatcher[T Event] struct {
-	handlers map[string][]EventHandler[T]
+	handlers []eventHandleFilters[T]
 	mu       sync.Mutex
+}
+
+type eventHandleFilters[T Event] struct {
+	h       EventHandler[T]
+	filters map[string]struct{}
 }
 
 var _ EventDispatcher[Event] = (*eventDispatcher[Event])(nil)
@@ -31,22 +36,37 @@ var _ EventDispatcher[Event] = (*eventDispatcher[Event])(nil)
 // NewEventDispatcher creates a new domain event dispatcher instance.
 func NewEventDispatcher[T Event]() *eventDispatcher[T] {
 	return &eventDispatcher[T]{
-		handlers: make(map[string][]EventHandler[T]),
+		handlers: make([]eventHandleFilters[T], 0),
 	}
 }
 
-func (d *eventDispatcher[T]) Subscribe(name string, handler EventHandler[T]) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+func (ed *eventDispatcher[T]) Subscribe(handler EventHandler[T], events ...string) {
+	ed.mu.Lock()
+	defer ed.mu.Unlock()
 
-	d.handlers[name] = append(d.handlers[name], handler)
+	var filters map[string]struct{}
+	if len(events) > 0 {
+		filters = make(map[string]struct{})
+		for _, event := range events {
+			filters[event] = struct{}{}
+		}
+	}
+
+	ed.handlers = append(ed.handlers, eventHandleFilters[T]{
+		h:       handler,
+		filters: filters,
+	})
 }
 
-func (d *eventDispatcher[T]) Publish(ctx context.Context, events ...T) error {
+func (ed *eventDispatcher[T]) Publish(ctx context.Context, events ...T) error {
 	for _, event := range events {
-		// For now, synchronously invoke all handlers registered for this event
-		for _, h := range d.handlers[event.EventName()] {
-			err := h.HandleEvent(ctx, event)
+		for _, handler := range ed.handlers {
+			if handler.filters != nil {
+				if _, exists := handler.filters[event.EventName()]; !exists {
+					continue
+				}
+			}
+			err := handler.h.HandleEvent(ctx, event)
 			if err != nil {
 				return err
 			}

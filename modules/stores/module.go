@@ -3,8 +3,10 @@ package stores
 import (
 	"context"
 
+	"eda-in-golang/internal/am"
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/es"
+	"eda-in-golang/internal/jetstream"
 	"eda-in-golang/internal/monolith"
 	pg "eda-in-golang/internal/postgres"
 	"eda-in-golang/internal/registry"
@@ -16,18 +18,22 @@ import (
 	"eda-in-golang/modules/stores/internal/logging"
 	"eda-in-golang/modules/stores/internal/postgres"
 	"eda-in-golang/modules/stores/internal/rest"
+	"eda-in-golang/modules/stores/storespb"
 )
 
 type Module struct {
 }
 
-func (m *Module) Startup(ctx context.Context, mono monolith.Server) error {
+func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 	// setup Driven adapters
 	reg := registry.New()
-	err := registrations(reg)
-	if err != nil {
+	if err = registrations(reg); err != nil {
 		return err
 	}
+	if err = storespb.Registrations(reg); err != nil {
+		return err
+	}
+	eventStream := am.NewEventStream(reg, jetstream.NewStream(mono.Config().Nats.Stream, mono.JS()))
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
 	aggregateStore := es.AggregateStoreWithMiddleware(
 		pg.NewEventStore("stores.events", mono.DB(), reg),
@@ -44,13 +50,17 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) error {
 		application.New(stores, products, catalog, mall),
 		mono.Logger(),
 	)
-	catalogHandlers := logging.LogEventHandlerAccess[ddd.AggregateEvent](
-		application.NewCatalogHandlers(catalog),
+	catalogHandler := logging.LogEventHandlerAccess(
+		application.NewCatalogHandler(catalog),
 		"Catalog", mono.Logger(),
 	)
-	mallHandlers := logging.LogEventHandlerAccess[ddd.AggregateEvent](
-		application.NewMallHandlers(mall),
+	mallHandler := logging.LogEventHandlerAccess(
+		application.NewMallHandler(mall),
 		"Mall", mono.Logger(),
+	)
+	integrationEventHandler := logging.LogEventHandlerAccess(
+		application.NewIntegrationEventHandler(eventStream),
+		"IntegrationEvents", mono.Logger(),
 	)
 
 	// setup Driver adapters
@@ -63,17 +73,18 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) error {
 	if err := rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
-	handlers.RegisterCatalogHandlers(catalogHandlers, domainDispatcher)
-	handlers.RegisterMallHandlers(mallHandlers, domainDispatcher)
+	handlers.RegisterCatalogHandler(catalogHandler, domainDispatcher)
+	handlers.RegisterMallHandler(mallHandler, domainDispatcher)
+	handlers.RegisterIntegrationEventHandler(integrationEventHandler, domainDispatcher)
 
 	return nil
 }
 
 func registrations(reg registry.Registry) (err error) {
-	serde := registrar.NewJsonRegistrar(reg)
+	regtr := registrar.NewJsonRegistrar(reg)
 
 	// Store
-	if err = serde.Register(domain.Store{}, func(v any) error {
+	if err = regtr.Register(domain.Store{}, func(v any) error {
 		store := v.(*domain.Store)
 		store.Aggregate = es.NewAggregate("", domain.StoreAggregate)
 		return nil
@@ -81,25 +92,25 @@ func registrations(reg registry.Registry) (err error) {
 		return
 	}
 	// store events
-	if err = serde.Register(domain.StoreCreated{}); err != nil {
+	if err = regtr.Register(domain.StoreCreated{}); err != nil {
 		return
 	}
-	if err = serde.RegisterWithKey(domain.StoreParticipationEnabledEvent, domain.StoreParticipationToggled{}); err != nil {
+	if err = regtr.RegisterWithKey(domain.StoreParticipationEnabledEvent, domain.StoreParticipationToggled{}); err != nil {
 		return
 	}
-	if err = serde.RegisterWithKey(domain.StoreParticipationDisabledEvent, domain.StoreParticipationToggled{}); err != nil {
+	if err = regtr.RegisterWithKey(domain.StoreParticipationDisabledEvent, domain.StoreParticipationToggled{}); err != nil {
 		return
 	}
-	if err = serde.Register(domain.StoreRebranded{}); err != nil {
+	if err = regtr.Register(domain.StoreRebranded{}); err != nil {
 		return
 	}
 	// store snapshots
-	if err = serde.Register(domain.StoreV1{}); err != nil {
+	if err = regtr.RegisterWithKey(domain.StoreV1{}.SnapshotName(), domain.StoreV1{}); err != nil {
 		return
 	}
 
 	// Product
-	if err = serde.Register(domain.Product{}, func(v any) error {
+	if err = regtr.Register(domain.Product{}, func(v any) error {
 		store := v.(*domain.Product)
 		store.Aggregate = es.NewAggregate("", domain.ProductAggregate)
 		return nil
@@ -107,23 +118,23 @@ func registrations(reg registry.Registry) (err error) {
 		return
 	}
 	// product events
-	if err = serde.Register(domain.ProductAdded{}); err != nil {
+	if err = regtr.Register(domain.ProductAdded{}); err != nil {
 		return
 	}
-	if err = serde.Register(domain.ProductRebranded{}); err != nil {
+	if err = regtr.Register(domain.ProductRebranded{}); err != nil {
 		return
 	}
-	if err = serde.RegisterWithKey(domain.ProductPriceIncreasedEvent, domain.ProductPriceChanged{}); err != nil {
+	if err = regtr.RegisterWithKey(domain.ProductPriceIncreasedEvent, domain.ProductPriceChanged{}); err != nil {
 		return
 	}
-	if err = serde.RegisterWithKey(domain.ProductPriceDecreasedEvent, domain.ProductPriceChanged{}); err != nil {
+	if err = regtr.RegisterWithKey(domain.ProductPriceDecreasedEvent, domain.ProductPriceChanged{}); err != nil {
 		return
 	}
-	if err = serde.Register(domain.ProductRemoved{}); err != nil {
+	if err = regtr.Register(domain.ProductRemoved{}); err != nil {
 		return
 	}
 	// product snapshots
-	if err = serde.Register(domain.ProductV1{}); err != nil {
+	if err = regtr.RegisterWithKey(domain.ProductV1{}.SnapshotName(), domain.ProductV1{}); err != nil {
 		return
 	}
 

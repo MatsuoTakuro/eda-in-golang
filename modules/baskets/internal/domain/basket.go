@@ -5,7 +5,6 @@ import (
 
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/es"
-	"eda-in-golang/internal/registry"
 )
 
 const BasketAggregate = "baskets.Basket"
@@ -28,9 +27,10 @@ type Basket struct {
 	Status     BasketStatus
 }
 
-var _ es.Hydrator = (*Basket)(nil)
-var _ es.EventSourcedAggregate = (*Basket)(nil)
-var _ registry.Registrable = (*Basket)(nil)
+var _ interface {
+	es.EventApplier
+	es.Snapshotter
+} = (*Basket)(nil)
 
 func NewBasket(id string) *Basket {
 	return &Basket{

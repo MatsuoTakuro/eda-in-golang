@@ -80,10 +80,10 @@ func (Module) Startup(ctx context.Context, srv monolith.Server) error {
 }
 
 func registrations(reg registry.Registry) error {
-	serde := registrar.NewJsonRegistrar(reg)
+	regtr := registrar.NewJsonRegistrar(reg)
 
 	// Order
-	if err := serde.Register(domain.Order{}, func(v any) error {
+	if err := regtr.Register(domain.Order{}, func(v any) error {
 		order := v.(*domain.Order)
 		order.Aggregate = es.NewAggregate("", domain.OrderAggregate)
 		return nil
@@ -91,20 +91,20 @@ func registrations(reg registry.Registry) error {
 		return err
 	}
 	// order events
-	if err := serde.Register(domain.OrderCreated{}); err != nil {
+	if err := regtr.Register(domain.OrderCreated{}); err != nil {
 		return err
 	}
-	if err := serde.Register(domain.OrderCanceled{}); err != nil {
+	if err := regtr.Register(domain.OrderCanceled{}); err != nil {
 		return err
 	}
-	if err := serde.Register(domain.OrderReadied{}); err != nil {
+	if err := regtr.Register(domain.OrderReadied{}); err != nil {
 		return err
 	}
-	if err := serde.Register(domain.OrderCompleted{}); err != nil {
+	if err := regtr.Register(domain.OrderCompleted{}); err != nil {
 		return err
 	}
 	// order snapshots
-	if err := serde.Register(domain.OrderV1{}); err != nil {
+	if err := regtr.Register(domain.OrderV1{}); err != nil {
 		return err
 	}
 

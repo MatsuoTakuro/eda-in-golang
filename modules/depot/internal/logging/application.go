@@ -2,12 +2,13 @@ package logging
 
 import (
 	"context"
+
+	"github.com/rs/zerolog"
+
 	"eda-in-golang/modules/depot/internal/application"
 	"eda-in-golang/modules/depot/internal/application/commands"
 	"eda-in-golang/modules/depot/internal/application/queries"
 	"eda-in-golang/modules/depot/internal/domain"
-
-	"github.com/rs/zerolog"
 )
 
 type Application struct {
