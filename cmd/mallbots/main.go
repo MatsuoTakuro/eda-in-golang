@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -114,13 +117,16 @@ func initMux(_ web.WebConfig) *chi.Mux {
 	return chi.NewMux()
 }
 
-func initJetStream(cfg config.NatsConfig, nc *nats.Conn) (nats.JetStreamContext, error) {
-	js, err := nc.JetStream()
+func initJetStream(cfg config.NatsConfig, nc *nats.Conn) (jetstream.JetStream, error) {
+	js, err := jetstream.New(nc)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = js.AddStream(&nats.StreamConfig{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = js.CreateStream(ctx, jetstream.StreamConfig{
 		Name:     cfg.Stream,
 		Subjects: []string{fmt.Sprintf("%s.>", cfg.Stream)},
 	})

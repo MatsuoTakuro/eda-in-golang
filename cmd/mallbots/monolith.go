@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -23,7 +24,7 @@ type mono struct {
 	cfg     config.AppConfig
 	db      *sql.DB
 	nc      *nats.Conn
-	js      nats.JetStreamContext
+	js      jetstream.JetStream
 	logger  zerolog.Logger
 	modules []monolith.Module
 	mux     *chi.Mux
@@ -41,7 +42,7 @@ func (m *mono) DB() *sql.DB {
 	return m.db
 }
 
-func (m *mono) JS() nats.JetStreamContext {
+func (m *mono) JS() jetstream.JetStream {
 	return m.js
 }
 

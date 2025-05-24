@@ -38,6 +38,15 @@ services:
       - /var/lib/nats/data
     volumes:
       - 'jsdata:/var/lib/nats/data'
+  nats-box:
+    image: natsio/nats-box
+    container_name: nats-box
+    depends_on:
+      - nats
+    entrypoint: /bin/sh
+    tty: true
+    env_file:
+      - docker/.env
 
 volumes:
   pgdata:

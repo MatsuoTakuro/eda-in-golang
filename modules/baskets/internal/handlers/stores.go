@@ -17,5 +17,7 @@ func RegisterStoreHandler(storeHandlers ddd.EventHandler[ddd.Event], stream am.E
 		storespb.StoreCreatedEvent,
 		storespb.StoreParticipatingToggledEvent,
 		storespb.StoreRebrandedEvent,
-	})
+	},
+		am.GroupName("baskets_stores_handler"),
+	)
 }

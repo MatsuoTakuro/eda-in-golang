@@ -32,14 +32,14 @@ func NewSubscriberConfig(options []SubscriberOption) SubscriberConfig {
 	}
 
 	for _, option := range options {
-		option.configureSubscriberConfig(&cfg)
+		option.apply(&cfg)
 	}
 
 	return cfg
 }
 
 type SubscriberOption interface {
-	configureSubscriberConfig(*SubscriberConfig)
+	apply(*SubscriberConfig)
 }
 
 func (c SubscriberConfig) MessageFilters() []string {
@@ -62,30 +62,38 @@ func (c SubscriberConfig) MaxRedeliver() int {
 	return c.maxRedeliver
 }
 
+var (
+	_ SubscriberOption = (*MessageFilter)(nil)
+	_ SubscriberOption = (*GroupName)(nil)
+	_ SubscriberOption = (*AckType)(nil)
+	_ SubscriberOption = (*AckWait)(nil)
+	_ SubscriberOption = (*MaxRedeliver)(nil)
+)
+
 type MessageFilter []string
 
-func (s MessageFilter) configureSubscriberConfig(cfg *SubscriberConfig) {
+func (s MessageFilter) apply(cfg *SubscriberConfig) {
 	cfg.msgFilter = s
 }
 
 type GroupName string
 
-func (n GroupName) configureSubscriberConfig(cfg *SubscriberConfig) {
+func (n GroupName) apply(cfg *SubscriberConfig) {
 	cfg.groupName = string(n)
 }
 
-func (t AckType) configureSubscriberConfig(cfg *SubscriberConfig) {
+func (t AckType) apply(cfg *SubscriberConfig) {
 	cfg.ackType = t
 }
 
 type AckWait time.Duration
 
-func (w AckWait) configureSubscriberConfig(cfg *SubscriberConfig) {
+func (w AckWait) apply(cfg *SubscriberConfig) {
 	cfg.ackWait = time.Duration(w)
 }
 
 type MaxRedeliver int
 
-func (i MaxRedeliver) configureSubscriberConfig(cfg *SubscriberConfig) {
+func (i MaxRedeliver) apply(cfg *SubscriberConfig) {
 	cfg.maxRedeliver = int(i)
 }

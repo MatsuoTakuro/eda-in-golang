@@ -1,2 +1,2 @@
-// Package am provides asynchronous messaging capabilities for the application.
+// Package am provides general asynchronous messaging functionality and interfaces.
 package am

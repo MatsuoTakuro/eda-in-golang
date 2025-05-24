@@ -5,7 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 
@@ -16,9 +16,7 @@ import (
 type Server interface {
 	Config() config.AppConfig
 	DB() *sql.DB
-	// TODO: update the legacy API of nats.JetStreamContext to new JetStream API
-	// (see: https://github.com/nats-io/nats.go/blob/main/jetstream/README.md)
-	JS() nats.JetStreamContext
+	JS() jetstream.JetStream
 	Logger() zerolog.Logger
 	Mux() *chi.Mux
 	RPC() *grpc.Server
