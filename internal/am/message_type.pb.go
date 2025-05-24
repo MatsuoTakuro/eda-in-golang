@@ -22,11 +22,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// EventMessageData is the envelope format used to serialize any domain event before publishing.
-// - `payload` holds the serialized domain event (e.g., StoreCreated) as bytes.
-// - `occurred_at` records the exact time the event occurred.
-// - `metadata` carries structured context data (e.g., correlation ID, causation ID).
-// This wrapper ensures a consistent structure for publishing raw event messages across the system.
+// EventMessageData is the payload used for communication between modules.
+// It describes the process of converting a domain event into the data field of a raw message during publishing,
+// and converting the data field of a raw message back into a domain event (an event message) during consumption.
 type EventMessageData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

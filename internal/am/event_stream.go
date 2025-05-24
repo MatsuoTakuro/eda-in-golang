@@ -80,12 +80,14 @@ func (s eventStream) Subscribe(topicName string, handler MessageHandler[EventMes
 	fn := MessageHandlerFunc[RawMessage](func(ctx context.Context, msg RawMessage) error {
 		var eventData EventMessageData
 
+		// filter messages and only process those that match the filters
 		if filters != nil {
 			if _, exists := filters[msg.MessageName()]; !exists {
 				return nil
 			}
 		}
 
+		// convert the raw message data to the event message data
 		err := proto.Unmarshal(msg.Data(), &eventData)
 		if err != nil {
 			return err
