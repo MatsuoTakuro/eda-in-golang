@@ -4,6 +4,6 @@ import (
 	"context"
 )
 
-type StoreRepository interface {
+type StoreClient interface {
 	Find(ctx context.Context, storeID string) (*Store, error)
 }

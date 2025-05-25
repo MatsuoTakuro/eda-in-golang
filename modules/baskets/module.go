@@ -16,6 +16,7 @@ import (
 	"eda-in-golang/modules/baskets/internal/grpc"
 	"eda-in-golang/modules/baskets/internal/handlers"
 	"eda-in-golang/modules/baskets/internal/logging"
+	"eda-in-golang/modules/baskets/internal/postgres"
 	"eda-in-golang/modules/baskets/internal/rest"
 	"eda-in-golang/modules/stores/storespb"
 )
@@ -43,9 +44,9 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 	if err != nil {
 		return err
 	}
-	stores := grpc.NewStoreRepository(conn)
-	products := grpc.NewProductRepository(conn)
-	orders := grpc.NewOrderRepository(conn)
+	stores := postgres.NewStoreCacheRepository("baskets.stores_cache", mono.DB(), grpc.NewStoreClient(conn))
+	products := postgres.NewProductCacheRepository("baskets.products_cache", mono.DB(), grpc.NewProductClient(conn))
+	orders := grpc.NewOrderClient(conn)
 
 	// setup application
 	app := logging.LogApplicationAccess(
@@ -57,11 +58,11 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 		"Order", mono.Logger(),
 	)
 	storeHandler := logging.LogEventHandlerAccess(
-		application.NewStoreHandler(mono.Logger()),
+		application.NewStoreHandler(stores),
 		"Store", mono.Logger(),
 	)
 	productHandlers := logging.LogEventHandlerAccess(
-		application.NewProductHandlers(mono.Logger()),
+		application.NewProductHandler(products),
 		"Product", mono.Logger(),
 	)
 
@@ -75,11 +76,11 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 	if err = rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
-	handlers.RegisterOrderHandlers(orderHandlers, domainDispatcher)
-	if err = handlers.RegisterStoreHandler(storeHandler, eventStream); err != nil {
+	handlers.SubscribeDomainEventsForOrder(orderHandlers, domainDispatcher)
+	if err = handlers.SubscribeStoreIntegrationEvents(storeHandler, eventStream); err != nil {
 		return err
 	}
-	if err = handlers.RegisterProductHandlers(productHandlers, eventStream); err != nil {
+	if err = handlers.SubscribeProductIntegrationEvents(productHandlers, eventStream); err != nil {
 		return err
 	}
 
@@ -92,6 +93,7 @@ func registrations(reg registry.Registry) error {
 	// Basket
 	if err := regtr.Register(domain.Basket{}, func(v interface{}) error {
 		basket := v.(*domain.Basket)
+		basket.Aggregate = es.NewAggregate("", domain.BasketAggregate)
 		basket.Items = make(map[string]domain.Item)
 		return nil
 	}); err != nil {

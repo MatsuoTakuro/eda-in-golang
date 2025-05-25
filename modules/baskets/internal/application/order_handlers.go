@@ -8,12 +8,12 @@ import (
 )
 
 type OrderHandlers[T ddd.AggregateEvent] struct {
-	orders domain.OrderRepository
+	orders domain.OrderClient
 }
 
 var _ ddd.EventHandler[ddd.AggregateEvent] = (*OrderHandlers[ddd.AggregateEvent])(nil)
 
-func NewOrderHandlers(orders domain.OrderRepository) OrderHandlers[ddd.AggregateEvent] {
+func NewOrderHandlers(orders domain.OrderClient) OrderHandlers[ddd.AggregateEvent] {
 	return OrderHandlers[ddd.AggregateEvent]{
 		orders: orders,
 	}

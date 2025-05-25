@@ -50,16 +50,16 @@ type (
 
 	Application struct {
 		baskets  domain.BasketRepository
-		stores   domain.StoreRepository
-		products domain.ProductRepository
-		orders   domain.OrderRepository
+		stores   domain.StoreClient
+		products domain.ProductClient
+		orders   domain.OrderClient
 	}
 )
 
 var _ App = (*Application)(nil)
 
-func New(baskets domain.BasketRepository, stores domain.StoreRepository, products domain.ProductRepository,
-	orders domain.OrderRepository,
+func New(baskets domain.BasketRepository, stores domain.StoreClient, products domain.ProductClient,
+	orders domain.OrderClient,
 ) *Application {
 	return &Application{
 		baskets:  baskets,

@@ -8,7 +8,7 @@ import (
 	"eda-in-golang/modules/stores/storespb"
 )
 
-func RegisterProductHandlers(productHandlers ddd.EventHandler[ddd.Event], stream am.EventSubscriber) error {
+func SubscribeProductIntegrationEvents(productHandlers ddd.EventHandler[ddd.Event], stream am.EventSubscriber) error {
 	productEvtMsgHandler := am.MessageHandlerFunc[am.EventMessage](func(ctx context.Context, eventMsg am.EventMessage) error {
 		return productHandlers.HandleEvent(ctx, eventMsg)
 	})

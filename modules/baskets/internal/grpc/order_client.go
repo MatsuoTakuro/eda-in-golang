@@ -10,17 +10,17 @@ import (
 	"eda-in-golang/modules/ordering/orderingpb"
 )
 
-type OrderRepository struct {
+type OrderClient struct {
 	client orderingpb.OrderingServiceClient
 }
 
-var _ domain.OrderRepository = (*OrderRepository)(nil)
+var _ domain.OrderClient = (*OrderClient)(nil)
 
-func NewOrderRepository(conn *grpc.ClientConn) OrderRepository {
-	return OrderRepository{client: orderingpb.NewOrderingServiceClient(conn)}
+func NewOrderClient(conn *grpc.ClientConn) OrderClient {
+	return OrderClient{client: orderingpb.NewOrderingServiceClient(conn)}
 }
 
-func (r OrderRepository) Save(ctx context.Context, paymentID, customerID string, basketItems map[string]domain.Item) (string, error) {
+func (r OrderClient) Save(ctx context.Context, paymentID, customerID string, basketItems map[string]domain.Item) (string, error) {
 	items := make([]*orderingpb.Item, 0, len(basketItems))
 	for _, item := range basketItems {
 		items = append(items, &orderingpb.Item{
