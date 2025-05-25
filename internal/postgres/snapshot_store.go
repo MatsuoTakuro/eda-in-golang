@@ -18,6 +18,8 @@ type snapshotStore struct {
 	registry  registry.Registry
 }
 
+var _ es.AggregateStore = (*snapshotStore)(nil)
+
 func WithSnapshotStore(tableName string, db *sql.DB, registry registry.Registry) es.AggregateStoreMiddleware {
 	snapStore := snapshotStore{
 		tableName: tableName,

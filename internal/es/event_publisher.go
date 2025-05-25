@@ -11,6 +11,8 @@ type eventPublisher struct {
 	publisher ddd.EventPublisher[ddd.AggregateEvent]
 }
 
+var _ AggregateStore = (*eventPublisher)(nil)
+
 func WithEventPublisher(publisher ddd.EventPublisher[ddd.AggregateEvent]) AggregateStoreMiddleware {
 	eventPublisher := eventPublisher{
 		publisher: publisher,
