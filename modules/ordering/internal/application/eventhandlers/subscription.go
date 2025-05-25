@@ -5,11 +5,11 @@ import (
 	"eda-in-golang/modules/ordering/internal/domain"
 )
 
-func SubscribeForInvoice(invoiceHandler ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]) {
+func SubscribeDomainEventsForInvoice(invoiceHandler ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]) {
 	domainSubscriber.Subscribe(invoiceHandler, domain.OrderReadiedEvent)
 }
 
-func SubscribeForNotification(notificationHandler ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]) {
+func SubscribeDomainEventsForNotification(notificationHandler ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]) {
 	domainSubscriber.Subscribe(notificationHandler,
 		domain.OrderCreatedEvent,
 		domain.OrderReadiedEvent,

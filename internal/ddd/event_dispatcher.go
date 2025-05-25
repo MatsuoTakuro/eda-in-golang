@@ -40,6 +40,7 @@ func NewEventDispatcher[T Event]() *eventDispatcher[T] {
 	}
 }
 
+// Subscribe registers an event handler for specific event names.
 func (ed *eventDispatcher[T]) Subscribe(handler EventHandler[T], events ...string) {
 	ed.mu.Lock()
 	defer ed.mu.Unlock()
@@ -58,6 +59,8 @@ func (ed *eventDispatcher[T]) Subscribe(handler EventHandler[T], events ...strin
 	})
 }
 
+// Publish dispatches the given events to all matching handlers synchronously.
+// Handlers are invoked one by one in the order they were subscribed.
 func (ed *eventDispatcher[T]) Publish(ctx context.Context, events ...T) error {
 	for _, event := range events {
 		for _, handler := range ed.handlers {

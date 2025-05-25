@@ -73,8 +73,8 @@ func (Module) Startup(ctx context.Context, srv monolith.Server) error {
 	if err := rest.RegisterSwagger(srv.Mux()); err != nil {
 		return err
 	}
-	eventhandlers.SubscribeForNotification(notificationEventHdlrs, domainDispatcher)
-	eventhandlers.SubscribeForInvoice(invoiceEventHdlrs, domainDispatcher)
+	eventhandlers.SubscribeDomainEventsForNotification(notificationEventHdlrs, domainDispatcher)
+	eventhandlers.SubscribeDomainEventsForInvoice(invoiceEventHdlrs, domainDispatcher)
 
 	return nil
 }
