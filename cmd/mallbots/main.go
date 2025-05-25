@@ -58,6 +58,11 @@ func run() (err error) {
 			return
 		}
 	}(m.db)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err = m.db.PingContext(ctx); err != nil {
+		return
+	}
 	// init nats & jetstream
 	m.nc, err = nats.Connect(cfg.Nats.URL)
 	if err != nil {
