@@ -73,9 +73,9 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 	if err := rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
-	handlers.RegisterCatalogHandler(catalogHandler, domainDispatcher)
-	handlers.RegisterMallHandler(mallHandler, domainDispatcher)
-	handlers.RegisterIntegrationEventHandler(integrationEventHandler, domainDispatcher)
+	handlers.SubscribeDomainEventsForCatalog(catalogHandler, domainDispatcher)
+	handlers.SubscribeDomainEventsForMall(mallHandler, domainDispatcher)
+	handlers.SubscribeDomainEventsForIntegration(integrationEventHandler, domainDispatcher)
 
 	return nil
 }

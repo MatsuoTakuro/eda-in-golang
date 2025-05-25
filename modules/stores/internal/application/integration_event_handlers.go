@@ -33,6 +33,8 @@ func (h integrationEventHandler[T]) HandleEvent(ctx context.Context, event T) er
 		return h.onStoreParticipationDisabled(ctx, event)
 	case domain.StoreRebrandedEvent:
 		return h.onStoreRebranded(ctx, event)
+	case domain.ProductAddedEvent:
+		return h.onProductAdded(ctx, event)
 	}
 	return nil
 }
@@ -72,6 +74,20 @@ func (h integrationEventHandler[T]) onStoreRebranded(ctx context.Context, event 
 		ddd.NewEvent(storespb.StoreRebrandedEvent, &storespb.StoreRebranded{
 			Id:   event.ID(),
 			Name: payload.Name,
+		}),
+	)
+}
+
+func (h integrationEventHandler[T]) onProductAdded(ctx context.Context, event ddd.AggregateEvent) error {
+	payload := event.Payload().(*domain.ProductAdded)
+	return h.publisher.Publish(ctx, storespb.ProductAggregateChannel,
+		ddd.NewEvent(storespb.ProductAddedEvent, &storespb.ProductAdded{
+			Id:          event.ID(),
+			StoreId:     payload.StoreID,
+			Name:        payload.Name,
+			Description: payload.Description,
+			Price:       payload.Price,
+			Sku:         payload.SKU,
 		}),
 	)
 }
