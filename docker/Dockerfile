@@ -24,5 +24,8 @@ COPY --from=builder /go/bin/dlv /go/bin/dlv
 COPY --from=builder /mallbots/docker/wait-for .
 RUN chmod +x /wait-for
 
+COPY --from=builder /mallbots/docker/entrypoint .
+RUN chmod +x /entrypoint
+
 # Copy the binary to the production image from the builder stage.
 COPY --from=builder /mallbots/monolith /mallbots/monolith
