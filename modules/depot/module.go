@@ -22,7 +22,7 @@ type Module struct{}
 func (Module) Startup(ctx context.Context, mono monolith.Server) error {
 	// setup Driven adapters
 	reg := registry.New()
-	if err := storespb.Registrations(reg); err != nil {
+	if err := storespb.RegisterIntegrationEvents(reg); err != nil {
 		return err
 	}
 	eventStream := am.NewEventStream(reg, jetstream.NewStream("depot", mono.Config().Nats.Stream, mono.JS()))

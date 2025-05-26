@@ -2,6 +2,7 @@ package jetstream
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -59,7 +60,7 @@ func (s *stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 		for {
 			select {
 			case <-future.Ok(): // publish acknowledged
-				log.Printf("%s acknowledged message published: (%s: %s)", s.module, rawMsg.MessageName(), rawMsg.ID())
+				log.Printf("%s acked publishing message: (%s: %s)", s.module, rawMsg.MessageName(), rawMsg.ID())
 				return
 			case <-future.Err(): // error ignored; try again
 				// TODO add some variable delay between tries
@@ -140,7 +141,7 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.MessageHandler[am
 		err = proto.Unmarshal(natsMsg.Data(), m)
 		if err != nil {
 			// TODO Nak? ... logging?
-			log.Printf("failed to unmarshal message received: %v", err)
+			log.Printf("failed to unmarshal received message: %v", err)
 			return
 		}
 
@@ -158,7 +159,7 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.MessageHandler[am
 		wCtx, cancel := context.WithTimeout(context.Background(), cfg.AckWait())
 		defer cancel()
 
-		errc := make(chan error)
+		errc := make(chan error) // no buffer, so we can wait for the handler to finish
 		go func() {
 			errc <- handler.HandleMessage(wCtx, msg)
 		}()
@@ -167,29 +168,16 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.MessageHandler[am
 			err = msg.Ack()
 			if err != nil {
 				// TODO logging?
-				log.Printf("%s failed to auto-ack message received: %v", s.module, err)
+				log.Printf("%s failed to auto-ack received message: %v", s.module, err)
 			}
 		}
 
 		select {
 		case err = <-errc:
-			if err == nil {
-				if ackErr := msg.Ack(); ackErr != nil {
-					// TODO logging?
-					log.Printf("%s failed to ack message received (%s: %s): %v", s.module, msg.MessageName(), msg.ID(), ackErr)
-				}
-				log.Printf("%s acknowledged message received: (%s: %s)", s.module, msg.MessageName(), msg.ID())
-				return
-			}
-			if nakErr := msg.NAck(); nakErr != nil {
-				// TODO logging?
-				log.Printf("%s failed to nack message received (%s: %s): %v", s.module, msg.MessageName(), msg.ID(), nakErr)
+			handleMsgResult(s.module, msg, err)
 
-			}
 		case <-wCtx.Done():
-			// TODO logging?
-			log.Printf("%s timeout for handling message received (%s: %s): %v", s.module, msg.MessageName(), msg.ID(), wCtx.Err())
-			return
+			log.Printf("%s timeout for handling received message (%s: %s): %v", s.module, msg.MessageName(), msg.ID(), wCtx.Err())
 		}
 	}
 }
@@ -201,4 +189,33 @@ func (s *stream) Drain() error {
 	}
 
 	return nil
+}
+
+func handleMsgResult(module string, msg *rawMessage, err error) {
+	switch {
+	case err == nil:
+		if ackErr := msg.Ack(); ackErr != nil {
+			log.Printf("%s failed to ack received message (%s: %s): %v", module, msg.MessageName(), msg.ID(), ackErr)
+			return
+		}
+		log.Printf("%s acked received message: (%s: %s)", module, msg.MessageName(), msg.ID())
+		return
+
+	case errors.Is(err, am.ErrMessageSkipped):
+		if ackErr := msg.Ack(); ackErr != nil {
+			log.Printf("%s failed to ack received message (%s: %s): %v", module, msg.MessageName(), msg.ID(), ackErr)
+			return
+		}
+		log.Printf("%s skipped handling received message (%s: %s)", module, msg.MessageName(), msg.ID())
+		return
+
+	default:
+		if nakErr := msg.NAck(); nakErr != nil {
+			err = errors.Join(err, nakErr)
+			log.Printf("%s failed to nack received message (%s: %s): %v", module, msg.MessageName(), msg.ID(), err)
+			return
+		}
+		log.Printf("%s nacked received message: (%s: %s): %v", module, msg.MessageName(), msg.ID(), err)
+		return
+	}
 }

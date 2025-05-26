@@ -24,6 +24,7 @@ func (OrderCreated) Key() string { return OrderCreatedEvent }
 
 type OrderCanceled struct {
 	CustomerID string
+	PaymentID  string
 }
 
 var _ registry.Registrable = (*OrderCanceled)(nil)
@@ -41,7 +42,8 @@ var _ registry.Registrable = (*OrderReadied)(nil)
 func (OrderReadied) Key() string { return OrderReadiedEvent }
 
 type OrderCompleted struct {
-	InvoiceID string
+	CustomerID string
+	InvoiceID  string
 }
 
 var _ registry.Registrable = (*OrderCompleted)(nil)

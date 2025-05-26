@@ -26,10 +26,10 @@ type Module struct{}
 func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 	// setup Driven adapters
 	reg := registry.New()
-	if err = registrations(reg); err != nil {
+	if err = registerDomainEvents(reg); err != nil {
 		return err
 	}
-	if err = storespb.Registrations(reg); err != nil {
+	if err = storespb.RegisterIntegrationEvents(reg); err != nil {
 		return err
 	}
 	eventStream := am.NewEventStream(reg, jetstream.NewStream("baskets", mono.Config().Nats.Stream, mono.JS()))
@@ -87,7 +87,7 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 	return
 }
 
-func registrations(reg registry.Registry) error {
+func registerDomainEvents(reg registry.Registry) error {
 	regtr := registrar.NewJsonRegistrar(reg)
 
 	// Basket

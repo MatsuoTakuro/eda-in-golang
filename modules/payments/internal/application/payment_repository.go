@@ -3,10 +3,10 @@ package application
 import (
 	"context"
 
-	"eda-in-golang/modules/payments/internal/models"
+	"eda-in-golang/modules/payments/internal/domain"
 )
 
 type PaymentRepository interface {
-	Save(ctx context.Context, payment *models.Payment) error
-	Find(ctx context.Context, paymentID string) (*models.Payment, error)
+	Save(ctx context.Context, payment *domain.Payment) error
+	Find(ctx context.Context, paymentID string) (*domain.Payment, error)
 }

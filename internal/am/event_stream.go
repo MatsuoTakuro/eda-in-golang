@@ -4,6 +4,7 @@ import (
 	"context"
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/registry"
+	"errors"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -83,7 +84,7 @@ func (s eventStream) Subscribe(topicName string, handler MessageHandler[EventMes
 		// filter messages and only process those that match the filters
 		if filters != nil {
 			if _, exists := filters[msg.MessageName()]; !exists {
-				return nil
+				return ErrMessageSkipped
 			}
 		}
 
@@ -114,3 +115,5 @@ func (s eventStream) Subscribe(topicName string, handler MessageHandler[EventMes
 
 	return s.stream.Subscribe(topicName, fn, options...)
 }
+
+var ErrMessageSkipped = errors.New("message skipped due to filter")

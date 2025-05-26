@@ -8,7 +8,7 @@ import (
 	"github.com/stackus/errors"
 
 	"eda-in-golang/modules/payments/internal/application"
-	"eda-in-golang/modules/payments/internal/models"
+	"eda-in-golang/modules/payments/internal/domain"
 )
 
 type InvoiceRepository struct {
@@ -25,10 +25,10 @@ func NewInvoiceRepository(tableName string, db *sql.DB) InvoiceRepository {
 	}
 }
 
-func (r InvoiceRepository) Find(ctx context.Context, invoiceID string) (*models.Invoice, error) {
+func (r InvoiceRepository) Find(ctx context.Context, invoiceID string) (*domain.Invoice, error) {
 	const query = "SELECT order_id, amount, status FROM %s WHERE id = $1 LIMIT 1"
 
-	invoice := &models.Invoice{
+	invoice := &domain.Invoice{
 		ID: invoiceID,
 	}
 	var status string
@@ -45,7 +45,7 @@ func (r InvoiceRepository) Find(ctx context.Context, invoiceID string) (*models.
 	return invoice, nil
 }
 
-func (r InvoiceRepository) Save(ctx context.Context, invoice *models.Invoice) error {
+func (r InvoiceRepository) Save(ctx context.Context, invoice *domain.Invoice) error {
 	const query = "INSERT INTO %s (id, order_id, amount, status) VALUES ($1, $2, $3, $4)"
 
 	_, err := r.db.ExecContext(ctx, r.table(query), invoice.ID, invoice.OrderID, invoice.Amount, invoice.Status.String())
@@ -53,7 +53,7 @@ func (r InvoiceRepository) Save(ctx context.Context, invoice *models.Invoice) er
 	return err
 }
 
-func (r InvoiceRepository) Update(ctx context.Context, invoice *models.Invoice) error {
+func (r InvoiceRepository) Update(ctx context.Context, invoice *domain.Invoice) error {
 	const query = "UPDATE %s SET amount = $2, status = $3 WHERE id = $1"
 
 	_, err := r.db.ExecContext(ctx, r.table(query), invoice.ID, invoice.Amount, invoice.Status.String())
@@ -65,13 +65,13 @@ func (r InvoiceRepository) table(query string) string {
 	return fmt.Sprintf(query, r.tableName)
 }
 
-func (r InvoiceRepository) statusToDomain(status string) (models.InvoiceStatus, error) {
+func (r InvoiceRepository) statusToDomain(status string) (domain.InvoiceStatus, error) {
 	switch status {
-	case models.InvoicePending.String():
-		return models.InvoicePending, nil
-	case models.InvoicePaid.String():
-		return models.InvoicePaid, nil
+	case domain.InvoiceIsPending.String():
+		return domain.InvoiceIsPending, nil
+	case domain.InvoiceIsPaid.String():
+		return domain.InvoiceIsPaid, nil
 	default:
-		return models.InvoiceUnknown, fmt.Errorf("unknown invoice status: %s", status)
+		return domain.InvoiceIsUnknown, fmt.Errorf("unknown invoice status: %s", status)
 	}
 }

@@ -21,8 +21,8 @@ const (
 	ProductRemovedEvent        = "storesapi.ProductRemoved"
 )
 
-// Registrations registers store and product events with the registry.
-func Registrations(reg registry.Registry) error {
+// RegisterIntegrationEvents registers store and product events with the registry.
+func RegisterIntegrationEvents(reg registry.Registry) error {
 	regtr := registrar.NewProtoRegistrar(reg)
 
 	// Store events

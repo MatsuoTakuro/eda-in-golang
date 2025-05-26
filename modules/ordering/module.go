@@ -3,8 +3,10 @@ package ordering
 import (
 	"context"
 
+	"eda-in-golang/internal/am"
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/es"
+	"eda-in-golang/internal/jetstream"
 	"eda-in-golang/internal/monolith"
 	pg "eda-in-golang/internal/postgres"
 	"eda-in-golang/internal/registry"
@@ -15,6 +17,7 @@ import (
 	"eda-in-golang/modules/ordering/internal/domain"
 	"eda-in-golang/modules/ordering/internal/infra/grpc"
 	"eda-in-golang/modules/ordering/internal/infra/rest"
+	"eda-in-golang/modules/ordering/orderingpb"
 )
 
 type Module struct{}
@@ -24,11 +27,14 @@ var _ monolith.Module = (*Module)(nil)
 func (Module) Startup(ctx context.Context, srv monolith.Server) error {
 	// setup Driven (Outbound) adapters
 	reg := registry.New()
-	err := registrations(reg)
-	if err != nil {
+	if err := registerDomainEvents(reg); err != nil {
+		return err
+	}
+	if err := orderingpb.RegisterIntegrationEvents(reg); err != nil {
 		return err
 	}
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
+	eventStream := am.NewEventStream(reg, jetstream.NewStream("ordering", srv.Config().Nats.Stream, srv.JS()))
 	aggregateStore := es.AggregateStoreWithMiddleware(
 		pg.NewEventStore("ordering.events", srv.DB(), reg),
 		es.WithEventPublisher(domainDispatcher),
@@ -42,25 +48,17 @@ func (Module) Startup(ctx context.Context, srv monolith.Server) error {
 	}
 	customerCli := grpc.NewCustomerClient(conn)
 	paymentCli := grpc.NewPaymentClient(conn)
-	invoiceCli := grpc.NewInvoiceClient(conn)
 	shoppingCli := grpc.NewShoppingListClient(conn)
-	notificationCli := grpc.NewNotificationClient(conn)
 
 	// setup application with logging
 	app := logging.NewUsecases(
 		application.NewUsecases(orderRepo, customerCli, paymentCli, shoppingCli),
 		srv.Logger(),
 	)
-	// setup application handlers with logging
-	notificationEventHdlrs := logging.NewEventHandler(
-		eventhandlers.NewNotification(notificationCli),
-		"Notification",
-		srv.Logger(),
-	)
-	invoiceEventHdlrs := logging.NewEventHandler(
-		eventhandlers.NewInvoice(invoiceCli),
-		"Invoice",
-		srv.Logger(),
+	// setup event handlers with logging
+	integrationEvtHdlr := logging.NewEventHandler(
+		eventhandlers.NewIntegration(eventStream),
+		"IntegrationEvents", srv.Logger(),
 	)
 
 	// setup Driver (Inbound) adapters
@@ -73,13 +71,12 @@ func (Module) Startup(ctx context.Context, srv monolith.Server) error {
 	if err := rest.RegisterSwagger(srv.Mux()); err != nil {
 		return err
 	}
-	eventhandlers.SubscribeDomainEventsForNotification(notificationEventHdlrs, domainDispatcher)
-	eventhandlers.SubscribeDomainEventsForInvoice(invoiceEventHdlrs, domainDispatcher)
+	eventhandlers.SubscribeDomainEventsForIntegration(integrationEvtHdlr, domainDispatcher)
 
 	return nil
 }
 
-func registrations(reg registry.Registry) error {
+func registerDomainEvents(reg registry.Registry) error {
 	regtr := registrar.NewJsonRegistrar(reg)
 
 	// Order

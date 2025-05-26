@@ -28,9 +28,11 @@ type Order struct {
 	Status     OrderStatus
 }
 
-var _ es.Hydrator = (*Order)(nil)
-var _ es.EventSourcedAggregate = (*Order)(nil)
-var _ registry.Registrable = (*Order)(nil)
+var (
+	_ es.Hydrator              = (*Order)(nil)
+	_ es.EventSourcedAggregate = (*Order)(nil)
+	_ registry.Registrable     = (*Order)(nil)
+)
 
 func NewOrder(id string) *Order {
 	return &Order{
@@ -74,6 +76,7 @@ func (o *Order) Cancel() error {
 
 	o.AddEvent(OrderCanceledEvent, &OrderCanceled{
 		CustomerID: o.CustomerID,
+		PaymentID:  o.PaymentID,
 	})
 	return nil
 }
@@ -96,7 +99,8 @@ func (o *Order) Complete(invoiceID string) error {
 	// validate status
 
 	o.AddEvent(OrderCompletedEvent, &OrderCompleted{
-		InvoiceID: invoiceID,
+		CustomerID: o.CustomerID,
+		InvoiceID:  invoiceID,
 	})
 
 	return nil
