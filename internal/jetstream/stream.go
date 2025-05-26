@@ -15,6 +15,7 @@ import (
 const maxRetries = 5
 
 type stream struct {
+	module      string
 	streamName  string
 	js          jetstream.JetStream
 	consumeCtxs []jetstream.ConsumeContext
@@ -22,8 +23,9 @@ type stream struct {
 
 var _ am.MessageStream[am.RawMessage, am.RawMessage] = (*stream)(nil)
 
-func NewStream(streamName string, js jetstream.JetStream) *stream {
+func NewStream(module, streamName string, js jetstream.JetStream) *stream {
 	return &stream{
+		module:     module,
 		streamName: streamName,
 		js:         js,
 	}
@@ -57,20 +59,20 @@ func (s *stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 		for {
 			select {
 			case <-future.Ok(): // publish acknowledged
-				log.Printf("acknowledged message published: (%s: %s)", rawMsg.MessageName(), rawMsg.ID())
+				log.Printf("%s acknowledged message published: (%s: %s)", s.module, rawMsg.MessageName(), rawMsg.ID())
 				return
 			case <-future.Err(): // error ignored; try again
 				// TODO add some variable delay between tries
 				tries = tries - 1
 				if tries <= 0 {
 					// TODO do more than give up
-					log.Printf("gave up publishing message after %d retries: (%s: %s): %v", maxRetries, rawMsg.MessageName(), rawMsg.ID(), err)
+					log.Printf("%s gave up publishing message after %d retries: (%s: %s): %v", s.module, maxRetries, rawMsg.MessageName(), rawMsg.ID(), err)
 					return
 				}
 				future, err = s.js.PublishMsgAsync(future.Msg())
 				if err != nil {
 					// TODO do more than give up
-					log.Printf("failed to publish message: (%s: %s): %v", rawMsg.MessageName(), rawMsg.ID(), err)
+					log.Printf("%s failed to publish message: (%s: %s): %v", s.module, rawMsg.MessageName(), rawMsg.ID(), err)
 					return
 				}
 			}
@@ -165,7 +167,7 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.MessageHandler[am
 			err = msg.Ack()
 			if err != nil {
 				// TODO logging?
-				log.Printf("failed to auto-ack message received: %v", err)
+				log.Printf("%s failed to auto-ack message received: %v", s.module, err)
 			}
 		}
 
@@ -174,19 +176,19 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.MessageHandler[am
 			if err == nil {
 				if ackErr := msg.Ack(); ackErr != nil {
 					// TODO logging?
-					log.Printf("failed to ack message received (%s: %s): %v", msg.MessageName(), msg.ID(), ackErr)
+					log.Printf("%s failed to ack message received (%s: %s): %v", s.module, msg.MessageName(), msg.ID(), ackErr)
 				}
-				log.Printf("acknowledged message received: (%s: %s)", msg.MessageName(), msg.ID())
+				log.Printf("%s acknowledged message received: (%s: %s)", s.module, msg.MessageName(), msg.ID())
 				return
 			}
 			if nakErr := msg.NAck(); nakErr != nil {
 				// TODO logging?
-				log.Printf("failed to nack message received (%s: %s): %v", msg.MessageName(), msg.ID(), nakErr)
+				log.Printf("%s failed to nack message received (%s: %s): %v", s.module, msg.MessageName(), msg.ID(), nakErr)
 
 			}
 		case <-wCtx.Done():
 			// TODO logging?
-			log.Printf("timeout for handling message received (%s: %s): %v", msg.MessageName(), msg.ID(), wCtx.Err())
+			log.Printf("%s timeout for handling message received (%s: %s): %v", s.module, msg.MessageName(), msg.ID(), wCtx.Err())
 			return
 		}
 	}

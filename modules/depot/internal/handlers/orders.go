@@ -5,6 +5,6 @@ import (
 	"eda-in-golang/modules/depot/internal/domain"
 )
 
-func RegisterOrderHandlers(orderHandlers ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]) {
-	domainSubscriber.Subscribe(orderHandlers, domain.ShoppingListCompletedEvent)
+func SubscribeDomainEventsForOrder(orderHandler ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]) {
+	domainSubscriber.Subscribe(orderHandler, domain.ShoppingListCompletedEvent)
 }

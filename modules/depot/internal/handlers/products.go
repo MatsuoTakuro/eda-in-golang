@@ -1,0 +1,21 @@
+package handlers
+
+import (
+	"context"
+
+	"eda-in-golang/internal/am"
+	"eda-in-golang/internal/ddd"
+	"eda-in-golang/modules/stores/storespb"
+)
+
+func SubscribeProductIntegrationEvents(productHandler ddd.EventHandler[ddd.Event], stream am.EventSubscriber) error {
+	evtMsgHandler := am.MessageHandlerFunc[am.EventMessage](func(ctx context.Context, eventMsg am.EventMessage) error {
+		return productHandler.HandleEvent(ctx, eventMsg)
+	})
+
+	return stream.Subscribe(storespb.ProductAggregateChannel, evtMsgHandler, am.MessageFilter{
+		storespb.ProductAddedEvent,
+		storespb.ProductRebrandedEvent,
+		storespb.ProductRemovedEvent,
+	}, am.GroupName("depot-products"))
+}

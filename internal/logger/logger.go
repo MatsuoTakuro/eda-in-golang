@@ -23,6 +23,8 @@ const (
 	PANIC Level = "PANIC"
 )
 
+// TODO: Add logger into context in api requests and event messages
+
 func New(cfg LogConfig) zerolog.Logger {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack

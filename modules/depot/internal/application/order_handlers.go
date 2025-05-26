@@ -13,7 +13,7 @@ type OrderHandlers[T ddd.AggregateEvent] struct {
 
 var _ ddd.EventHandler[ddd.AggregateEvent] = (*OrderHandlers[ddd.AggregateEvent])(nil)
 
-func NewOrderHandlers(orders domain.OrderRepository) OrderHandlers[ddd.AggregateEvent] {
+func NewOrderHandler(orders domain.OrderRepository) OrderHandlers[ddd.AggregateEvent] {
 	return OrderHandlers[ddd.AggregateEvent]{
 		orders: orders,
 	}
