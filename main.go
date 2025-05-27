@@ -1,35 +1,32 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"eda-in-golang/baskets"
+	"eda-in-golang/customers"
+	"eda-in-golang/depot"
 	"eda-in-golang/internal/config"
 	"eda-in-golang/internal/logger"
 	"eda-in-golang/internal/monolith"
 	"eda-in-golang/internal/rpc"
-	"eda-in-golang/internal/runner"
+	"eda-in-golang/internal/waiter"
 	"eda-in-golang/internal/web"
-	"eda-in-golang/modules/baskets"
-	"eda-in-golang/modules/customers"
-	"eda-in-golang/modules/depot"
-	"eda-in-golang/modules/notifications"
-	"eda-in-golang/modules/ordering"
-	"eda-in-golang/modules/payments"
-	"eda-in-golang/modules/search"
-	"eda-in-golang/modules/stores"
+	"eda-in-golang/notifications"
+	"eda-in-golang/ordering"
+	"eda-in-golang/payments"
+	"eda-in-golang/search"
+	"eda-in-golang/stores"
 )
 
 func main() {
@@ -47,7 +44,7 @@ func run() (err error) {
 		return err
 	}
 
-	m := mono{cfg: cfg}
+	m := app{cfg: cfg}
 
 	// init infrastructure...
 	// init db
@@ -61,11 +58,6 @@ func run() (err error) {
 			return
 		}
 	}(m.db)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err = m.db.PingContext(ctx); err != nil {
-		return
-	}
 	// init nats & jetstream
 	m.nc, err = nats.Connect(cfg.Nats.URL)
 	if err != nil {
@@ -79,7 +71,7 @@ func run() (err error) {
 	m.logger = initLogger(cfg)
 	m.rpc = initRpc(cfg.Rpc)
 	m.mux = initMux(cfg.Web)
-	m.runner = runner.New(runner.CatchSignals())
+	m.waiter = waiter.New(waiter.CatchSignals())
 
 	// init modules
 	m.modules = []monolith.Module{
@@ -103,13 +95,13 @@ func run() (err error) {
 	fmt.Println("started mallbots application")
 	defer fmt.Println("stopped mallbots application")
 
-	m.runner.Add(
-		m.runWeb,
-		m.runRPC,
-		m.runStream,
+	m.waiter.Add(
+		m.waitForWeb,
+		m.waitForRPC,
+		m.waitForStream,
 	)
 
-	return m.runner.Run()
+	return m.waiter.Wait()
 }
 
 func initLogger(cfg config.AppConfig) zerolog.Logger {
@@ -120,26 +112,23 @@ func initLogger(cfg config.AppConfig) zerolog.Logger {
 }
 
 func initRpc(_ rpc.RpcConfig) *grpc.Server {
-	srv := grpc.NewServer()
-	reflection.Register(srv)
+	server := grpc.NewServer()
+	reflection.Register(server)
 
-	return srv
+	return server
 }
 
 func initMux(_ web.WebConfig) *chi.Mux {
 	return chi.NewMux()
 }
 
-func initJetStream(cfg config.NatsConfig, nc *nats.Conn) (jetstream.JetStream, error) {
-	js, err := jetstream.New(nc)
+func initJetStream(cfg config.NatsConfig, nc *nats.Conn) (nats.JetStreamContext, error) {
+	js, err := nc.JetStream()
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_, err = js.CreateStream(ctx, jetstream.StreamConfig{
+	_, err = js.AddStream(&nats.StreamConfig{
 		Name:     cfg.Stream,
 		Subjects: []string{fmt.Sprintf("%s.>", cfg.Stream)},
 	})
