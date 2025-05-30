@@ -22,7 +22,7 @@ type (
 
 type eventStream struct {
 	reg    registry.Registry
-	stream MessageStream[RawMessage, RawMessage]
+	stream RawMessageStream
 }
 
 var (
@@ -31,7 +31,7 @@ var (
 	_ EventStream     = (*eventStream)(nil)
 )
 
-func NewEventStream(reg registry.Registry, stream MessageStream[RawMessage, RawMessage]) *eventStream {
+func NewEventStream(reg registry.Registry, stream RawMessageStream) *eventStream {
 	return &eventStream{
 		reg:    reg,
 		stream: stream,
@@ -78,7 +78,7 @@ func (s eventStream) Subscribe(topicName string, handler MessageHandler[EventMes
 		}
 	}
 
-	fn := MessageHandlerFunc[RawMessage](func(ctx context.Context, msg RawMessage) error {
+	fn := MessageHandlerFunc[AckableRawMessage](func(ctx context.Context, msg AckableRawMessage) error {
 		var eventData EventMessageData
 
 		// filter messages and only process those that match the filters

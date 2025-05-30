@@ -22,7 +22,7 @@ type stream struct {
 	consumeCtxs []jetstream.ConsumeContext
 }
 
-var _ am.MessageStream[am.RawMessage, am.RawMessage] = (*stream)(nil)
+var _ am.RawMessageStream = (*stream)(nil)
 
 func NewStream(module, streamName string, js jetstream.JetStream) *stream {
 	return &stream{
@@ -83,7 +83,7 @@ func (s *stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 	return nil
 }
 
-func (s *stream) Subscribe(topicName string, handler am.MessageHandler[am.RawMessage], options ...am.SubscriberOption) error {
+func (s *stream) Subscribe(topicName string, handler am.RawMessageHandler, options ...am.SubscriberOption) error {
 	var err error
 
 	subCfg := am.NewSubscriberConfig(options)
@@ -133,7 +133,7 @@ func (s *stream) Subscribe(topicName string, handler am.MessageHandler[am.RawMes
 	return nil
 }
 
-func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.MessageHandler[am.RawMessage]) func(jetstream.Msg) {
+func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler) func(jetstream.Msg) {
 	return func(natsMsg jetstream.Msg) {
 		var err error
 

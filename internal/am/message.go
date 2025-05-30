@@ -6,19 +6,24 @@ import (
 	"eda-in-golang/internal/ddd"
 )
 
-// Message is a message interface that represents a message in the system.
-// It can be an event, command, or any other type of message.
-type Message interface {
-	ddd.IDer
-	MessageName() string
+// AckableMessage represents a message that supports acknowledgment control.
+type AckableMessage interface {
+	Message
 	Ack() error
 	NAck() error
 	Extend() error
 	Kill() error
 }
 
-type MessageHandler[M Message] interface {
-	HandleMessage(ctx context.Context, msg M) error
+// Message is a message interface that represents a message in the system.
+// It can be an event, command, or any other type of message.
+type Message interface {
+	ddd.IDer
+	MessageName() string
+}
+
+type MessageHandler[I AckableMessage] interface {
+	HandleMessage(ctx context.Context, msg I) error
 }
 
 // MessagePublisher is a publisher for messages.
@@ -27,18 +32,20 @@ type MessagePublisher[T any] interface {
 }
 
 // MessageSubscriber is a subscriber for messages.
-type MessageSubscriber[M Message] interface {
-	Subscribe(topicName string, handler MessageHandler[M], options ...SubscriberOption) error
+type MessageSubscriber[A AckableMessage] interface {
+	Subscribe(topicName string, handler MessageHandler[A], options ...SubscriberOption) error
 }
 
 // MessageStream is a stream for messages.
-type MessageStream[T any, M Message] interface {
+type MessageStream[T any, A AckableMessage] interface {
 	MessagePublisher[T]
-	MessageSubscriber[M]
+	MessageSubscriber[A]
 }
 
-type MessageHandlerFunc[M Message] func(ctx context.Context, msg M) error
+type MessageHandlerFunc[A AckableMessage] func(ctx context.Context, msg A) error
 
-func (f MessageHandlerFunc[M]) HandleMessage(ctx context.Context, msg M) error {
+var _ MessageHandler[AckableMessage] = MessageHandlerFunc[AckableMessage](nil)
+
+func (f MessageHandlerFunc[A]) HandleMessage(ctx context.Context, msg A) error {
 	return f(ctx, msg)
 }

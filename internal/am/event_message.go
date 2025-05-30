@@ -7,7 +7,7 @@ import (
 )
 
 type EventMessage interface {
-	Message
+	AckableMessage
 	ddd.Event
 }
 
@@ -17,7 +17,7 @@ type eventMessage struct {
 	payload    ddd.EventPayload
 	metadata   ddd.Metadata
 	occurredAt time.Time
-	msg        RawMessage
+	msg        AckableMessage
 }
 
 var _ EventMessage = (*eventMessage)(nil)

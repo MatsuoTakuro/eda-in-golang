@@ -6,8 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type EventPayload any
-
 type Event interface {
 	IDer
 	EventName() string
@@ -15,6 +13,12 @@ type Event interface {
 	Metadata() Metadata
 	OccurredAt() time.Time
 }
+
+type EventOption interface {
+	configureEvent(*event)
+}
+
+type EventPayload any
 
 func NewEvent(name string, payload EventPayload, options ...EventOption) event {
 	return newEvent(name, payload, options...)
@@ -38,7 +42,7 @@ func newEvent(name string, payload EventPayload, options ...EventOption) event {
 	}
 
 	for _, opt := range options {
-		opt.apply(&evt)
+		opt.configureEvent(&evt)
 	}
 
 	return evt
