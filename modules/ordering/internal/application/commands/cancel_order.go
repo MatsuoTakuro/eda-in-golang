@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 
+	"eda-in-golang/internal/ddd"
 	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
@@ -13,15 +14,18 @@ type CancelOrder struct {
 type CancelOrderCommander struct {
 	orderRepo      infra.OrderRepository
 	shoppingClient infra.ShoppingClient
+	publisher      ddd.EventPublisher[ddd.Event]
 }
 
 func NewCancelOrderCommander(
 	orderRepo infra.OrderRepository,
 	shoppingClient infra.ShoppingClient,
+	publisher ddd.EventPublisher[ddd.Event],
 ) CancelOrderCommander {
 	return CancelOrderCommander{
 		orderRepo:      orderRepo,
 		shoppingClient: shoppingClient,
+		publisher:      publisher,
 	}
 }
 
@@ -31,7 +35,8 @@ func (c CancelOrderCommander) CancelOrder(ctx context.Context, cmd CancelOrder) 
 		return err
 	}
 
-	if err = order.Cancel(); err != nil {
+	event, err := order.Cancel()
+	if err != nil {
 		return err
 	}
 
@@ -43,5 +48,5 @@ func (c CancelOrderCommander) CancelOrder(ctx context.Context, cmd CancelOrder) 
 		return err
 	}
 
-	return nil
+	return c.publisher.Publish(ctx, event)
 }

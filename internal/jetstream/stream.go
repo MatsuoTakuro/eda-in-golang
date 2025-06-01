@@ -24,6 +24,7 @@ type stream struct {
 
 var _ am.RawMessageStream = (*stream)(nil)
 
+// TODO: take logger
 func NewStream(module, streamName string, js jetstream.JetStream) *stream {
 	return &stream{
 		module:     module,

@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 
+	"eda-in-golang/internal/ddd"
 	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
@@ -13,11 +14,13 @@ type CompleteOrder struct {
 
 type CompleteOrderCommander struct {
 	orderRepo infra.OrderRepository
+	publisher ddd.EventPublisher[ddd.Event]
 }
 
-func NewCompleteOrderCommander(orderRepo infra.OrderRepository) CompleteOrderCommander {
+func NewCompleteOrderCommander(orderRepo infra.OrderRepository, publisher ddd.EventPublisher[ddd.Event]) CompleteOrderCommander {
 	return CompleteOrderCommander{
 		orderRepo: orderRepo,
+		publisher: publisher,
 	}
 }
 
@@ -27,7 +30,7 @@ func (c CompleteOrderCommander) CompleteOrder(ctx context.Context, cmd CompleteO
 		return err
 	}
 
-	err = order.Complete(cmd.InvoiceID)
+	event, err := order.Complete(cmd.InvoiceID)
 	if err != nil {
 		return nil
 	}
@@ -35,5 +38,5 @@ func (c CompleteOrderCommander) CompleteOrder(ctx context.Context, cmd CompleteO
 		return err
 	}
 
-	return nil
+	return c.publisher.Publish(ctx, event)
 }

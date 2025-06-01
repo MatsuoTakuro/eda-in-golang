@@ -1,6 +1,7 @@
 package application
 
 import (
+	"eda-in-golang/internal/ddd"
 	"eda-in-golang/modules/ordering/internal/application/commands"
 	"eda-in-golang/modules/ordering/internal/application/queries"
 	"eda-in-golang/modules/ordering/internal/domain/infra"
@@ -18,11 +19,13 @@ type usecases struct {
 
 var _ Usecases = (*usecases)(nil)
 
-func NewUsecases(orderRepo infra.OrderRepository,
-	customerClient infra.CustomerClient, paymentClient infra.PaymentClient, shoppingClient infra.ShoppingClient,
+func NewUsecases(
+	orderRepo infra.OrderRepository,
+	shoppingClient infra.ShoppingClient,
+	publisher ddd.EventPublisher[ddd.Event],
 ) Usecases {
 	return &usecases{
-		Commands: commands.New(orderRepo, customerClient, paymentClient, shoppingClient),
+		Commands: commands.New(orderRepo, shoppingClient, publisher),
 		Queries:  queries.New(orderRepo),
 	}
 }

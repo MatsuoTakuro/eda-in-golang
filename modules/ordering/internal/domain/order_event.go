@@ -6,6 +6,8 @@ import (
 
 const (
 	OrderCreatedEvent   = "ordering.OrderCreated"
+	OrderRejectedEvent  = "ordering.OrderRejected"
+	OrderApprovedEvent  = "ordering.OrderApproved"
 	OrderCanceledEvent  = "ordering.OrderCanceled"
 	OrderReadiedEvent   = "ordering.OrderReadied"
 	OrderCompletedEvent = "ordering.OrderCompleted"
@@ -18,18 +20,16 @@ type OrderCreated struct {
 	Items      []Item
 }
 
-var _ registry.Registrable = (*OrderCreated)(nil)
+type OrderRejected struct{}
 
-func (OrderCreated) Key() string { return OrderCreatedEvent }
+type OrderApproved struct {
+	ShoppingID string
+}
 
 type OrderCanceled struct {
 	CustomerID string
 	PaymentID  string
 }
-
-var _ registry.Registrable = (*OrderCanceled)(nil)
-
-func (OrderCanceled) Key() string { return OrderCanceledEvent }
 
 type OrderReadied struct {
 	CustomerID string
@@ -37,15 +37,23 @@ type OrderReadied struct {
 	Total      float64
 }
 
-var _ registry.Registrable = (*OrderReadied)(nil)
-
-func (OrderReadied) Key() string { return OrderReadiedEvent }
-
 type OrderCompleted struct {
 	CustomerID string
 	InvoiceID  string
 }
 
-var _ registry.Registrable = (*OrderCompleted)(nil)
+var (
+	_ registry.Registrable = (*OrderCreated)(nil)
+	_ registry.Registrable = (*OrderRejected)(nil)
+	_ registry.Registrable = (*OrderApproved)(nil)
+	_ registry.Registrable = (*OrderCanceled)(nil)
+	_ registry.Registrable = (*OrderReadied)(nil)
+	_ registry.Registrable = (*OrderCompleted)(nil)
+)
 
+func (OrderCreated) Key() string   { return OrderCreatedEvent }
+func (OrderRejected) Key() string  { return OrderRejectedEvent }
+func (OrderApproved) Key() string  { return OrderApprovedEvent }
+func (OrderCanceled) Key() string  { return OrderCanceledEvent }
+func (OrderReadied) Key() string   { return OrderReadiedEvent }
 func (OrderCompleted) Key() string { return OrderCompletedEvent }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/stackus/errors"
 
+	"eda-in-golang/internal/ddd"
 	"eda-in-golang/modules/ordering/internal/domain"
 	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
@@ -17,22 +18,17 @@ type CreateOrder struct {
 }
 
 type CreateOrderCommander struct {
-	orderRepo   infra.OrderRepository
-	customerCli infra.CustomerClient
-	paymentCli  infra.PaymentClient
-	shoppingCli infra.ShoppingClient
+	orderRepo infra.OrderRepository
+	publisher ddd.EventPublisher[ddd.Event]
 }
 
-func NewCreateOrderCommander(orderRepo infra.OrderRepository,
-	customerCli infra.CustomerClient,
-	paymentCli infra.PaymentClient,
-	shoppingCli infra.ShoppingClient,
+func NewCreateOrderCommander(
+	orderRepo infra.OrderRepository,
+	publisher ddd.EventPublisher[ddd.Event],
 ) CreateOrderCommander {
 	return CreateOrderCommander{
-		orderRepo:   orderRepo,
-		customerCli: customerCli,
-		paymentCli:  paymentCli,
-		shoppingCli: shoppingCli,
+		orderRepo: orderRepo,
+		publisher: publisher,
 	}
 }
 
@@ -42,31 +38,14 @@ func (c CreateOrderCommander) CreateOrder(ctx context.Context, cmd CreateOrder) 
 		return err
 	}
 
-	// authorizeCustomer
-	if err = c.customerCli.Authorize(ctx, cmd.CustomerID); err != nil {
-		return errors.Wrap(err, "order customer authorization")
-	}
-
-	// validatePayment
-	if err = c.paymentCli.Confirm(ctx, cmd.PaymentID); err != nil {
-		return errors.Wrap(err, "order payment confirmation")
-	}
-
-	// scheduleShopping
-	var shoppingID string
-	if shoppingID, err = c.shoppingCli.Create(ctx, cmd.ID, cmd.Items); err != nil {
-		return errors.Wrap(err, "order shopping scheduling")
-	}
-
-	err = order.CreateOrder(cmd.ID, cmd.CustomerID, cmd.PaymentID, shoppingID, cmd.Items)
+	event, err := order.CreateOrder(cmd.ID, cmd.CustomerID, cmd.PaymentID, cmd.Items)
 	if err != nil {
 		return errors.Wrap(err, "create order command")
 	}
 
-	// orderCreation
 	if err = c.orderRepo.Save(ctx, order); err != nil {
 		return errors.Wrap(err, "order creation")
 	}
 
-	return nil
+	return c.publisher.Publish(ctx, event)
 }

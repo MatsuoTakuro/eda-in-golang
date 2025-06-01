@@ -5,8 +5,9 @@ package orderingpb;
 message OrderCreated {
   message Item {
     string product_id = 1;
-    double price = 2;
-    int32 quantity = 3;
+    string store_id = 2;
+    double price = 3;
+    int32 quantity = 4;
   }
 
   string id = 1;
@@ -14,6 +15,18 @@ message OrderCreated {
   string payment_id = 3;
   string shopping_id = 4;
   repeated Item items = 5;
+}
+
+message OrderRejected {
+  string id = 1;
+  string customer_id = 2;
+  string payment_id = 3;
+}
+
+message OrderApproved {
+  string id = 1;
+  string customer_id = 2;
+  string payment_id = 3;
 }
 
 message OrderReadied {
@@ -33,4 +46,15 @@ message OrderCanceled {
   string id = 1;
   string customer_id = 2;
   string payment_id = 3;
+}
+
+// Commands
+
+message RejectOrder {
+  string id = 1;
+}
+
+message ApproveOrder {
+  string id = 1;
+  string shopping_id = 2;
 }
