@@ -14,7 +14,7 @@ const (
 	OrderCompletedEvent = "ordersapi.OrderCompleted"
 )
 
-func RegisterIntegrationEvents(reg registry.Registry) error {
+func RegisterMessages(reg registry.Registry) error {
 	regtr := registrar.NewProtoRegistrar(reg)
 
 	// Order events

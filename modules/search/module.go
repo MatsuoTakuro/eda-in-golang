@@ -23,13 +23,13 @@ type Module struct{}
 func (m Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 	// setup Driven adapters
 	reg := registry.New()
-	if err = orderingpb.RegisterIntegrationEvents(reg); err != nil {
+	if err = orderingpb.RegisterMessages(reg); err != nil {
 		return err
 	}
-	if err = customerspb.RegisterIntegrationEvents(reg); err != nil {
+	if err = customerspb.RegisterMessages(reg); err != nil {
 		return err
 	}
-	if err = storespb.RegisterIntegrationEvents(reg); err != nil {
+	if err = storespb.RegisterMessages(reg); err != nil {
 		return err
 	}
 	eventStream := am.NewEventStream(reg, jetstream.NewStream("search", mono.Config().Nats.Stream, mono.JS()))

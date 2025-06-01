@@ -27,7 +27,7 @@ func (m Module) Startup(ctx context.Context, mono monolith.Server) error {
 	if err := paymentspb.RegisterIntegrationEvents(reg); err != nil {
 		return err
 	}
-	if err := orderingpb.RegisterIntegrationEvents(reg); err != nil {
+	if err := orderingpb.RegisterMessages(reg); err != nil {
 		return err
 	}
 	eventStream := am.NewEventStream(reg, jetstream.NewStream("payments", mono.Config().Nats.Stream, mono.JS()))

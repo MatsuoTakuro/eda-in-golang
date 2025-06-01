@@ -29,7 +29,7 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 	if err = registerDomainEvents(reg); err != nil {
 		return err
 	}
-	if err = storespb.RegisterIntegrationEvents(reg); err != nil {
+	if err = storespb.RegisterMessages(reg); err != nil {
 		return err
 	}
 	eventStream := am.NewEventStream(reg, jetstream.NewStream("baskets", mono.Config().Nats.Stream, mono.JS()))

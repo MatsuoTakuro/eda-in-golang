@@ -30,7 +30,7 @@ func (Module) Startup(ctx context.Context, srv monolith.Server) error {
 	if err := registerDomainEvents(reg); err != nil {
 		return err
 	}
-	if err := orderingpb.RegisterIntegrationEvents(reg); err != nil {
+	if err := orderingpb.RegisterMessages(reg); err != nil {
 		return err
 	}
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()

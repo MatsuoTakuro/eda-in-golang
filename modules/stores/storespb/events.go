@@ -21,8 +21,8 @@ const (
 	ProductRemovedEvent        = "storesapi.ProductRemoved"
 )
 
-// RegisterIntegrationEvents registers store and product events with the registry.
-func RegisterIntegrationEvents(reg registry.Registry) error {
+// RegisterMessages registers store and product events with the registry.
+func RegisterMessages(reg registry.Registry) error {
 	regtr := registrar.NewProtoRegistrar(reg)
 
 	// Store events
@@ -67,7 +67,6 @@ var (
 func (*StoreCreated) Key() string              { return StoreCreatedEvent }
 func (*StoreParticipationToggled) Key() string { return StoreParticipatingToggledEvent }
 func (*StoreRebranded) Key() string            { return StoreRebrandedEvent }
-
-func (*ProductAdded) Key() string     { return ProductAddedEvent }
-func (*ProductRebranded) Key() string { return ProductRebrandedEvent }
-func (*ProductRemoved) Key() string   { return ProductRemovedEvent }
+func (*ProductAdded) Key() string              { return ProductAddedEvent }
+func (*ProductRebranded) Key() string          { return ProductRebrandedEvent }
+func (*ProductRemoved) Key() string            { return ProductRemovedEvent }

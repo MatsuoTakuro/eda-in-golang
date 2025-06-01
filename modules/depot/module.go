@@ -8,6 +8,7 @@ import (
 	"eda-in-golang/internal/jetstream"
 	"eda-in-golang/internal/monolith"
 	"eda-in-golang/internal/registry"
+	"eda-in-golang/modules/depot/depotpb"
 	"eda-in-golang/modules/depot/internal/application"
 	"eda-in-golang/modules/depot/internal/grpc"
 	"eda-in-golang/modules/depot/internal/handlers"
@@ -22,10 +23,15 @@ type Module struct{}
 func (Module) Startup(ctx context.Context, mono monolith.Server) error {
 	// setup Driven adapters
 	reg := registry.New()
-	if err := storespb.RegisterIntegrationEvents(reg); err != nil {
+	if err := storespb.RegisterMessages(reg); err != nil {
 		return err
 	}
-	eventStream := am.NewEventStream(reg, jetstream.NewStream("depot", mono.Config().Nats.Stream, mono.JS()))
+	if err := depotpb.RegisterMessages(reg); err != nil {
+		return err
+	}
+	stream := jetstream.NewStream("depot", mono.Config().Nats.Stream, mono.JS())
+	eventStream := am.NewEventStream(reg, stream)
+	commandStream := am.NewCommandStream(reg, stream)
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
 	shoppingLists := postgres.NewShoppingListRepository("depot.shopping_lists", mono.DB())
 	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
@@ -41,17 +47,17 @@ func (Module) Startup(ctx context.Context, mono monolith.Server) error {
 		application.New(shoppingLists, stores, products, domainDispatcher),
 		mono.Logger(),
 	)
-	orderHandler := logging.LogEventHandlerAccess(
-		application.NewOrderHandler(orders),
-		"Order", mono.Logger(),
+	domainEventHandlers := logging.LogEventHandlerAccess(
+		application.NewDomainEventHandlers(orders),
+		"DomainEvents", mono.Logger(),
 	)
-	storeHandler := logging.LogEventHandlerAccess(
-		application.NewStoreHandler(stores),
-		"Store", mono.Logger(),
+	integrationEventHandlers := logging.LogEventHandlerAccess(
+		application.NewIntegrationEventHandlers(stores, products),
+		"IntegrationEvents", mono.Logger(),
 	)
-	productHandler := logging.LogEventHandlerAccess(
-		application.NewProductHandler(products),
-		"Product", mono.Logger(),
+	commandHandlers := logging.LogCommandHandlerAccess(
+		application.NewCommandHandler(app),
+		"Commands", mono.Logger(),
 	)
 
 	// setup Driver adapters
@@ -64,11 +70,11 @@ func (Module) Startup(ctx context.Context, mono monolith.Server) error {
 	if err := rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
-	handlers.SubscribeDomainEventsForOrder(orderHandler, domainDispatcher)
-	if err = handlers.SubscribeStoreIntegrationEvents(storeHandler, eventStream); err != nil {
+	handlers.SubscribeDomainEvents(domainDispatcher, domainEventHandlers)
+	if err = handlers.SubscribeIntegrationEvents(eventStream, integrationEventHandlers); err != nil {
 		return err
 	}
-	if err = handlers.SubscribeProductIntegrationEvents(productHandler, eventStream); err != nil {
+	if err = handlers.SubscribeCommands(commandStream, commandHandlers); err != nil {
 		return err
 	}
 
