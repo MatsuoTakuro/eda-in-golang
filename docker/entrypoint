@@ -3,9 +3,9 @@
 set -e
 
 if [ "$DEBUG" = "true" ]; then
-  echo "Starting with Delve debugger..."
+  echo "starting application with debugger..."
   exec /go/bin/dlv exec /mallbots/monolith --headless --listen=:40000 --api-version=2 --accept-multiclient
 else
-  echo "Starting application normally..."
+  echo "starting application..."
   exec /mallbots/monolith
 fi
