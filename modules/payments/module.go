@@ -30,7 +30,7 @@ func (m Module) Startup(ctx context.Context, mono monolith.Server) error {
 	if err := orderingpb.RegisterMessages(reg); err != nil {
 		return err
 	}
-	eventStream := am.NewEventStream(reg, jetstream.NewStream("payments", mono.Config().Nats.Stream, mono.JS()))
+	eventStream := am.NewEventStream(reg, jetstream.NewStream("payments", mono.Config().Nats.Stream, mono.JS(), mono.Logger()))
 	domainDispatcher := ddd.NewEventDispatcher[ddd.Event]()
 	invoices := postgres.NewInvoiceRepository("payments.invoices", mono.DB())
 	payments := postgres.NewPaymentRepository("payments.payments", mono.DB())

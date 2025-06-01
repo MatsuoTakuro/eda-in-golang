@@ -32,7 +32,7 @@ func (m Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 	if err = storespb.RegisterMessages(reg); err != nil {
 		return err
 	}
-	eventStream := am.NewEventStream(reg, jetstream.NewStream("search", mono.Config().Nats.Stream, mono.JS()))
+	eventStream := am.NewEventStream(reg, jetstream.NewStream("search", mono.Config().Nats.Stream, mono.JS(), mono.Logger()))
 	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
 	if err != nil {
 		return err

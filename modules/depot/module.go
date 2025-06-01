@@ -29,7 +29,7 @@ func (Module) Startup(ctx context.Context, mono monolith.Server) error {
 	if err := depotpb.RegisterMessages(reg); err != nil {
 		return err
 	}
-	stream := jetstream.NewStream("depot", mono.Config().Nats.Stream, mono.JS())
+	stream := jetstream.NewStream("depot", mono.Config().Nats.Stream, mono.JS(), mono.Logger())
 	eventStream := am.NewEventStream(reg, stream)
 	commandStream := am.NewCommandStream(reg, stream)
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()

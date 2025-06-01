@@ -25,7 +25,7 @@ func (m Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 	if err = customerspb.RegisterMessages(reg); err != nil {
 		return err
 	}
-	stream := jetstream.NewStream("customers", mono.Config().Nats.Stream, mono.JS())
+	stream := jetstream.NewStream("customers", mono.Config().Nats.Stream, mono.JS(), mono.Logger())
 	eventStream := am.NewEventStream(reg, stream)
 	commandStream := am.NewCommandStream(reg, stream)
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()

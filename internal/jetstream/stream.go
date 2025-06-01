@@ -3,11 +3,11 @@ package jetstream
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 
 	"eda-in-golang/internal/am"
@@ -20,16 +20,22 @@ type stream struct {
 	streamName  string
 	js          jetstream.JetStream
 	consumeCtxs []jetstream.ConsumeContext
+	logger      zerolog.Logger
 }
 
 var _ am.RawMessageStream = (*stream)(nil)
 
-// TODO: take logger
-func NewStream(module, streamName string, js jetstream.JetStream) *stream {
+func NewStream(
+	module,
+	streamName string,
+	js jetstream.JetStream,
+	logger zerolog.Logger,
+) *stream {
 	return &stream{
 		module:     module,
 		streamName: streamName,
 		js:         js,
+		logger:     logger,
 	}
 }
 
@@ -61,20 +67,34 @@ func (s *stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 		for {
 			select {
 			case <-future.Ok(): // publish acknowledged
-				log.Printf("%s acked publishing message: (%s: %s)", s.module, rawMsg.MessageName(), rawMsg.ID())
+				s.logger.Info().
+					Any(moduleField, s.module).
+					Any(msgNameField, rawMsg.MessageName()).
+					Any(msgIDField, rawMsg.ID()).
+					Msg("acknowledged publishing message")
 				return
 			case <-future.Err(): // error ignored; try again
 				// TODO add some variable delay between tries
 				tries = tries - 1
 				if tries <= 0 {
 					// TODO do more than give up
-					log.Printf("%s gave up publishing message after %d retries: (%s: %s): %v", s.module, maxRetries, rawMsg.MessageName(), rawMsg.ID(), err)
+					s.logger.Error().
+						Any(moduleField, s.module).
+						Any(msgNameField, rawMsg.MessageName()).
+						Any(msgIDField, rawMsg.ID()).
+						Err(err).
+						Msg("gave up publishing message")
 					return
 				}
 				future, err = s.js.PublishMsgAsync(future.Msg())
 				if err != nil {
 					// TODO do more than give up
-					log.Printf("%s failed to publish message: (%s: %s): %v", s.module, rawMsg.MessageName(), rawMsg.ID(), err)
+					s.logger.Error().
+						Any(moduleField, s.module).
+						Any(msgNameField, rawMsg.MessageName()).
+						Any(msgIDField, rawMsg.ID()).
+						Err(err).
+						Msg("failed to publish message")
 					return
 				}
 			}
@@ -142,7 +162,10 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler
 		err = proto.Unmarshal(natsMsg.Data(), m)
 		if err != nil {
 			// TODO Nak? ... logging?
-			log.Printf("failed to unmarshal received message: %v", err)
+			s.logger.Error().
+				Any(moduleField, s.module).
+				Err(err).
+				Msg("failed to unmarshal received message")
 			return
 		}
 
@@ -169,16 +192,26 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler
 			err = msg.Ack()
 			if err != nil {
 				// TODO logging?
-				log.Printf("%s failed to auto-ack received message: %v", s.module, err)
+				s.logger.Error().
+					Any(moduleField, s.module).
+					Any(msgNameField, msg.MessageName()).
+					Any(msgIDField, msg.ID()).
+					Err(err).
+					Msg("failed to auto-ack received message")
 			}
 		}
 
 		select {
 		case err = <-errc:
-			handleMsgResult(s.module, msg, err)
+			s.handleMsgResult(msg, err)
 
 		case <-wCtx.Done():
-			log.Printf("%s timeout for handling received message (%s: %s): %v", s.module, msg.MessageName(), msg.ID(), wCtx.Err())
+			s.logger.Error().
+				Any(moduleField, s.module).
+				Any(msgNameField, msg.MessageName()).
+				Any(msgIDField, msg.ID()).
+				Err(wCtx.Err()).
+				Msg("timeout for handling received message")
 		}
 	}
 }
@@ -192,31 +225,64 @@ func (s *stream) Drain() error {
 	return nil
 }
 
-func handleMsgResult(module string, msg *rawMessage, err error) {
+func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 	switch {
 	case err == nil:
 		if ackErr := msg.Ack(); ackErr != nil {
-			log.Printf("%s failed to ack received message (%s: %s): %v", module, msg.MessageName(), msg.ID(), ackErr)
+			s.logger.Error().
+				Any(moduleField, s.module).
+				Any(msgNameField, msg.MessageName()).
+				Any(msgIDField, msg.ID()).
+				Err(ackErr).
+				Msg("failed to ack received message")
 			return
 		}
-		log.Printf("%s acked received message: (%s: %s)", module, msg.MessageName(), msg.ID())
+		s.logger.Info().
+			Any(moduleField, s.module).
+			Any(msgNameField, msg.MessageName()).
+			Any(msgIDField, msg.ID()).
+			Msg("acked received message")
 		return
 
 	case errors.Is(err, am.ErrMessageSkipped):
 		if ackErr := msg.Ack(); ackErr != nil {
-			log.Printf("%s failed to ack received message (%s: %s): %v", module, msg.MessageName(), msg.ID(), ackErr)
+			s.logger.Error().
+				Any(moduleField, s.module).
+				Any(msgNameField, msg.MessageName()).
+				Any(msgIDField, msg.ID()).
+				Err(ackErr).
+				Msg("failed to ack received message for skipping")
 			return
 		}
-		log.Printf("%s skipped handling received message (%s: %s)", module, msg.MessageName(), msg.ID())
+		s.logger.Info().
+			Any(moduleField, s.module).
+			Any(msgNameField, msg.MessageName()).
+			Any(msgIDField, msg.ID()).
+			Msg("skipped handling received message")
 		return
 
 	default:
 		if nakErr := msg.NAck(); nakErr != nil {
 			err = errors.Join(err, nakErr)
-			log.Printf("%s failed to nack received message (%s: %s): %v", module, msg.MessageName(), msg.ID(), err)
+			s.logger.Error().
+				Any(moduleField, s.module).
+				Any(msgNameField, msg.MessageName()).
+				Any(msgIDField, msg.ID()).
+				Err(err).
+				Msg("failed to nack received message")
 			return
 		}
-		log.Printf("%s nacked received message: (%s: %s): %v", module, msg.MessageName(), msg.ID(), err)
+		s.logger.Info().
+			Any(moduleField, s.module).
+			Any(msgNameField, msg.MessageName()).
+			Any(msgIDField, msg.ID()).
+			Msg("nacked received message")
 		return
 	}
 }
+
+const (
+	moduleField  = "module"
+	msgNameField = "msg_name"
+	msgIDField   = "msg_id"
+)

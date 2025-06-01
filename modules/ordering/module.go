@@ -42,7 +42,7 @@ func (Module) Startup(ctx context.Context, srv monolith.Server) error {
 		return err
 	}
 	domainDispatcher := ddd.NewEventDispatcher[ddd.Event]()
-	stream := jetstream.NewStream("ordering", srv.Config().Nats.Stream, srv.JS())
+	stream := jetstream.NewStream("ordering", srv.Config().Nats.Stream, srv.JS(), srv.Logger())
 	eventStream := am.NewEventStream(reg, stream)
 	commandStream := am.NewCommandStream(reg, stream)
 	aggregateStore := es.AggregateStoreWithMiddleware(
