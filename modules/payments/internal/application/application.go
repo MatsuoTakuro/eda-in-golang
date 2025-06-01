@@ -6,7 +6,7 @@ import (
 	"github.com/stackus/errors"
 
 	"eda-in-golang/internal/ddd"
-	"eda-in-golang/modules/payments/internal/domain"
+	"eda-in-golang/modules/payments/internal/models"
 )
 
 type (
@@ -67,7 +67,7 @@ func New(invoices InvoiceRepository, payments PaymentRepository, publisher ddd.E
 }
 
 func (a Application) AuthorizePayment(ctx context.Context, authorize AuthorizePayment) error {
-	return a.payments.Save(ctx, &domain.Payment{
+	return a.payments.Save(ctx, &models.Payment{
 		ID:         authorize.ID,
 		CustomerID: authorize.CustomerID,
 		Amount:     authorize.Amount,
@@ -83,11 +83,11 @@ func (a Application) ConfirmPayment(ctx context.Context, confirm ConfirmPayment)
 }
 
 func (a Application) CreateInvoice(ctx context.Context, create CreateInvoice) error {
-	return a.invoices.Save(ctx, &domain.Invoice{
+	return a.invoices.Save(ctx, &models.Invoice{
 		ID:      create.ID,
 		OrderID: create.OrderID,
 		Amount:  create.Amount,
-		Status:  domain.InvoiceIsPending,
+		Status:  models.InvoiceIsPending,
 	})
 }
 
@@ -108,15 +108,15 @@ func (a Application) PayInvoice(ctx context.Context, pay PayInvoice) error {
 		return err
 	}
 
-	if invoice.Status != domain.InvoiceIsPending {
+	if invoice.Status != models.InvoiceIsPending {
 		return errors.Wrap(errors.ErrBadRequest, "invoice cannot be paid for")
 	}
 
-	invoice.Status = domain.InvoiceIsPaid
+	invoice.Status = models.InvoiceIsPaid
 
 	// Before or after the invoice is saved we still risk something failing which
 	// will leave the state change only partially complete
-	if err = a.publisher.Publish(ctx, ddd.NewEvent(domain.InvoicePaidEvent, &domain.InvoicePaid{
+	if err = a.publisher.Publish(ctx, ddd.NewEvent(models.InvoicePaidEvent, &models.InvoicePaid{
 		ID:      invoice.ID,
 		OrderID: invoice.OrderID,
 	})); err != nil {
@@ -132,11 +132,11 @@ func (a Application) CancelInvoice(ctx context.Context, cancel CancelInvoice) er
 		return err
 	}
 
-	if invoice.Status != domain.InvoiceIsPending {
+	if invoice.Status != models.InvoiceIsPending {
 		return errors.Wrap(errors.ErrBadRequest, "invoice cannot be paid for")
 	}
 
-	invoice.Status = domain.InvoiceIsCanceled
+	invoice.Status = models.InvoiceIsCanceled
 
 	return a.invoices.Update(ctx, invoice)
 }

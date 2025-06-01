@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"eda-in-golang/modules/payments/internal/application"
-	"eda-in-golang/modules/payments/internal/domain"
+	"eda-in-golang/modules/payments/internal/models"
 )
 
 type PaymentRepository struct {
@@ -23,7 +23,7 @@ func NewPaymentRepository(tableName string, db *sql.DB) PaymentRepository {
 	}
 }
 
-func (r PaymentRepository) Save(ctx context.Context, payment *domain.Payment) error {
+func (r PaymentRepository) Save(ctx context.Context, payment *models.Payment) error {
 	const query = "INSERT INTO %s (id, customer_id, amount) VALUES ($1, $2, $3)"
 
 	_, err := r.db.ExecContext(ctx, r.table(query), payment.ID, payment.CustomerID, payment.Amount)
@@ -31,10 +31,10 @@ func (r PaymentRepository) Save(ctx context.Context, payment *domain.Payment) er
 	return err
 }
 
-func (r PaymentRepository) Find(ctx context.Context, paymentID string) (*domain.Payment, error) {
+func (r PaymentRepository) Find(ctx context.Context, paymentID string) (*models.Payment, error) {
 	const query = "SELECT customer_id, amount FROM %s WHERE id = $1 LIMIT 1"
 
-	payment := &domain.Payment{
+	payment := &models.Payment{
 		ID: paymentID,
 	}
 

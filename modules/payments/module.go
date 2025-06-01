@@ -24,13 +24,15 @@ func (m Module) Startup(ctx context.Context, mono monolith.Server) error {
 	// setup Driven adapters
 	reg := registry.New()
 
-	if err := paymentspb.RegisterIntegrationEvents(reg); err != nil {
+	if err := paymentspb.RegisterMessages(reg); err != nil {
 		return err
 	}
 	if err := orderingpb.RegisterMessages(reg); err != nil {
 		return err
 	}
-	eventStream := am.NewEventStream(reg, jetstream.NewStream("payments", mono.Config().Nats.Stream, mono.JS(), mono.Logger()))
+	stream := jetstream.NewStream("payments", mono.Config().Nats.Stream, mono.JS(), mono.Logger())
+	eventStream := am.NewEventStream(reg, stream)
+	commandStream := am.NewCommandStream(reg, stream)
 	domainDispatcher := ddd.NewEventDispatcher[ddd.Event]()
 	invoices := postgres.NewInvoiceRepository("payments.invoices", mono.DB())
 	payments := postgres.NewPaymentRepository("payments.payments", mono.DB())
@@ -40,13 +42,17 @@ func (m Module) Startup(ctx context.Context, mono monolith.Server) error {
 		application.New(invoices, payments, domainDispatcher),
 		mono.Logger(),
 	)
-	orderHandlers := logging.LogEventHandlerAccess(
-		application.NewOrderHandlers(app),
-		"Order", mono.Logger(),
+	domainEventHandlers := logging.LogEventHandlerAccess(
+		handlers.NewDomainEventHandlers(eventStream),
+		"DomainEvents", mono.Logger(),
 	)
 	integrationEventHandlers := logging.LogEventHandlerAccess(
-		application.NewIntegrationEventHandlers(eventStream),
+		handlers.NewIntegrationHandlers(app),
 		"IntegrationEvents", mono.Logger(),
+	)
+	commandHandlers := logging.LogCommandHandlerAccess(
+		handlers.NewCommandHandlers(app),
+		"Commands", mono.Logger(),
 	)
 
 	// setup Driver adapters
@@ -59,10 +65,13 @@ func (m Module) Startup(ctx context.Context, mono monolith.Server) error {
 	if err := rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
-	if err := handlers.SubscribeOrderIntegrationEvents(orderHandlers, eventStream); err != nil {
+	if err := handlers.RegisterIntegrationEventHandlers(eventStream, integrationEventHandlers); err != nil {
 		return err
 	}
-	handlers.SubscribeDomainEventsForIntegration(integrationEventHandlers, domainDispatcher)
+	handlers.SubscribeDomainEvents(domainDispatcher, domainEventHandlers)
+	if err := handlers.SubscribeCommands(commandStream, commandHandlers); err != nil {
+		return err
+	}
 
 	return nil
 }
