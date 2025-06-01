@@ -9,19 +9,19 @@ import (
 	"eda-in-golang/modules/customers/internal/domain"
 )
 
-type IntegrationEventHandlers[T ddd.AggregateEvent] struct {
+type domainEventHandlers[T ddd.AggregateEvent] struct {
 	publisher am.MessagePublisher[ddd.Event]
 }
 
-var _ ddd.EventHandler[ddd.AggregateEvent] = (*IntegrationEventHandlers[ddd.AggregateEvent])(nil)
+var _ ddd.EventHandler[ddd.AggregateEvent] = (*domainEventHandlers[ddd.AggregateEvent])(nil)
 
-func NewIntegrationEventHandlers(publisher am.MessagePublisher[ddd.Event]) *IntegrationEventHandlers[ddd.AggregateEvent] {
-	return &IntegrationEventHandlers[ddd.AggregateEvent]{
+func NewDomainEventHandlers(publisher am.MessagePublisher[ddd.Event]) *domainEventHandlers[ddd.AggregateEvent] {
+	return &domainEventHandlers[ddd.AggregateEvent]{
 		publisher: publisher,
 	}
 }
 
-func (h IntegrationEventHandlers[T]) HandleEvent(ctx context.Context, event T) error {
+func (h domainEventHandlers[T]) HandleEvent(ctx context.Context, event T) error {
 	switch event.EventName() {
 	case domain.CustomerRegisteredEvent:
 		return h.onCustomerRegistered(ctx, event)
@@ -35,7 +35,7 @@ func (h IntegrationEventHandlers[T]) HandleEvent(ctx context.Context, event T) e
 	return nil
 }
 
-func (h IntegrationEventHandlers[T]) onCustomerRegistered(ctx context.Context, event ddd.AggregateEvent) error {
+func (h domainEventHandlers[T]) onCustomerRegistered(ctx context.Context, event ddd.AggregateEvent) error {
 	payload := event.Payload().(*domain.CustomerRegistered)
 	return h.publisher.Publish(ctx, customerspb.CustomerAggregateChannel,
 		ddd.NewEvent(customerspb.CustomerRegisteredEvent, &customerspb.CustomerRegistered{
@@ -46,7 +46,7 @@ func (h IntegrationEventHandlers[T]) onCustomerRegistered(ctx context.Context, e
 	)
 }
 
-func (h IntegrationEventHandlers[T]) onCustomerSmsChanged(ctx context.Context, event ddd.AggregateEvent) error {
+func (h domainEventHandlers[T]) onCustomerSmsChanged(ctx context.Context, event ddd.AggregateEvent) error {
 	payload := event.Payload().(*domain.CustomerRegistered)
 	return h.publisher.Publish(ctx, customerspb.CustomerAggregateChannel,
 		ddd.NewEvent(customerspb.CustomerSmsChangedEvent, &customerspb.CustomerSmsChanged{
@@ -56,7 +56,7 @@ func (h IntegrationEventHandlers[T]) onCustomerSmsChanged(ctx context.Context, e
 	)
 }
 
-func (h IntegrationEventHandlers[T]) onCustomerEnabled(ctx context.Context, event ddd.AggregateEvent) error {
+func (h domainEventHandlers[T]) onCustomerEnabled(ctx context.Context, event ddd.AggregateEvent) error {
 	return h.publisher.Publish(ctx, customerspb.CustomerAggregateChannel,
 		ddd.NewEvent(customerspb.CustomerEnabledEvent, &customerspb.CustomerEnabled{
 			Id: event.AggregateID(),
@@ -64,7 +64,7 @@ func (h IntegrationEventHandlers[T]) onCustomerEnabled(ctx context.Context, even
 	)
 }
 
-func (h IntegrationEventHandlers[T]) onCustomerDisabled(ctx context.Context, event ddd.AggregateEvent) error {
+func (h domainEventHandlers[T]) onCustomerDisabled(ctx context.Context, event ddd.AggregateEvent) error {
 	return h.publisher.Publish(ctx, customerspb.CustomerAggregateChannel,
 		ddd.NewEvent(customerspb.CustomerDisabledEvent, &customerspb.CustomerDisabled{
 			Id: event.AggregateID(),

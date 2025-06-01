@@ -12,12 +12,16 @@ const (
 	CustomerSmsChangedEvent = "customersapi.CustomerSmsChanged"
 	CustomerEnabledEvent    = "customersapi.CustomerEnabled"
 	CustomerDisabledEvent   = "customersapi.CustomerDisabled"
+
+	CommandChannel = "mallbots.customers.commands"
+
+	AuthorizeCustomerCommand = "customersapi.AuthorizeCustomer"
 )
 
-func RegisterIntegrationEvents(reg registry.Registry) error {
+func RegisterMessages(reg registry.Registry) error {
 	regtr := registrar.NewProtoRegistrar(reg)
 
-	// Store events
+	// Customer events
 	if err := regtr.Register(&CustomerRegistered{}); err != nil {
 		return err
 	}
@@ -31,6 +35,10 @@ func RegisterIntegrationEvents(reg registry.Registry) error {
 		return err
 	}
 
+	// commands
+	if err := regtr.Register(&AuthorizeCustomer{}); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -45,3 +53,9 @@ func (*CustomerRegistered) Key() string { return CustomerRegisteredEvent }
 func (*CustomerSmsChanged) Key() string { return CustomerSmsChangedEvent }
 func (*CustomerEnabled) Key() string    { return CustomerEnabledEvent }
 func (*CustomerDisabled) Key() string   { return CustomerDisabledEvent }
+
+var (
+	_ registry.Registrable = (*AuthorizeCustomer)(nil)
+)
+
+func (*AuthorizeCustomer) Key() string { return AuthorizeCustomerCommand }
