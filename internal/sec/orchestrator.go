@@ -38,11 +38,13 @@ func NewOrchestrator[T any](
 	}
 }
 
+const noStepsExecuted = -1
+
 func (o orchestrator[T]) Start(ctx context.Context, id string, data T) error {
 	sagaCtx := &Context[T]{
 		ID:   id,
 		Data: data,
-		Step: -1,
+		Step: noStepsExecuted,
 	}
 
 	err := o.repo.Save(ctx, o.saga.Name(), sagaCtx)
@@ -83,6 +85,7 @@ func (o orchestrator[T]) HandleReply(ctx context.Context, reply ddd.Reply) error
 }
 
 func (o orchestrator[T]) handleReply(ctx context.Context, sagaCtx *Context[T], reply ddd.Reply) (stepResult[T], error) {
+	// Get the current step based on the saga context's step index.
 	step := o.saga.getSteps()[sagaCtx.Step]
 
 	err := step.handleReply(ctx, sagaCtx, reply)
@@ -94,7 +97,7 @@ func (o orchestrator[T]) handleReply(ctx context.Context, sagaCtx *Context[T], r
 	if outcome, ok := reply.Metadata().Get(am.ReplyOutcomeHdr).(string); !ok {
 		isSuccessful = false
 	} else {
-		isSuccessful = outcome == am.OutcomeSuccess
+		isSuccessful = (outcome == am.OutcomeSuccess)
 	}
 
 	if isSuccessful {
@@ -117,25 +120,30 @@ func (o orchestrator[T]) execute(ctx context.Context, sagaCtx *Context[T]) stepR
 	}
 
 	steps := o.saga.getSteps()
-	stepCount := len(steps)
+	stepCap := len(steps)
 
-	var step Step[T]
+	var next Step[T]
+	// delta tracks how many steps to move from current position to the next invocable step
+	// whether moving forward or backward.
 	var delta = 1
-	for i := sagaCtx.Step + direction; i > -1 && i < stepCount; i += direction {
-		if step = steps[i]; step != nil && step.isInvocable(sagaCtx.IsCompensating) {
+	for i := sagaCtx.Step + direction;  // start from the next step
+	noStepsExecuted < i && i < stepCap; // ensure we stay within bounds
+	i += direction {                    // increment by direction
+		next = steps[i]
+		if next != nil && next.isInvocable(sagaCtx.IsCompensating) {
 			break
 		}
-		delta += 1
+		delta += 1 // track the number of steps moved (forward or backward)
 	}
 
-	if step == nil {
+	if next == nil {
 		sagaCtx.complete()
 		return stepResult[T]{ctx: sagaCtx}
 	}
 
 	sagaCtx.advance(delta)
 
-	return step.executeAction(ctx, sagaCtx)
+	return next.executeAction(ctx, sagaCtx)
 }
 
 func (o orchestrator[T]) processResult(ctx context.Context, result stepResult[T]) (err error) {

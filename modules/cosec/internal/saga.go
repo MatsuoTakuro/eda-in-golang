@@ -30,7 +30,7 @@ func NewCreateOrderSaga() sec.Saga[*models.CreateOrderData] {
 		Saga: sec.NewSaga[*models.CreateOrderData](CreateOrderSagaName, CreateOrderReplyChannel),
 	}
 
-	// 0. -RejectOrder
+	// 0. RejectOrder
 	saga.AddStep().
 		Compensation(saga.rejectOrder)
 

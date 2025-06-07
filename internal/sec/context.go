@@ -5,6 +5,7 @@ type Context[T any] struct {
 	ID string
 	// Data is usually the payload for the next command to be published.
 	Data T
+	// Step indicates the current step in the saga.
 	Step int
 	// Done indicates whether the saga has completed all its steps.
 	Done bool
