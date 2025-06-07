@@ -1,20 +1,24 @@
 package sec
 
 type Context[T any] struct {
-	ID           string
-	Data         T
-	Step         int
-	Done         bool
-	Compensating bool
+	//ID is saga ID, which is unique for each saga instance.
+	ID string
+	// Data is usually the payload for the next command to be published.
+	Data T
+	Step int
+	// Done indicates whether the saga has completed all its steps.
+	Done bool
+	// IsCompensating indicates whether the saga at the current step is compensating or not.
+	IsCompensating isCompensating
 }
 
 func (s *Context[T]) advance(steps int) {
-	var dir = 1
-	if s.Compensating {
-		dir = -1
+	var direction = 1
+	if s.IsCompensating {
+		direction = -1
 	}
 
-	s.Step += dir * steps
+	s.Step += direction * steps
 }
 
 func (s *Context[T]) complete() {
@@ -22,5 +26,5 @@ func (s *Context[T]) complete() {
 }
 
 func (s *Context[T]) compensate() {
-	s.Compensating = true
+	s.IsCompensating = true
 }

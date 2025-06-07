@@ -31,18 +31,20 @@ func (s sagaStore) Load(ctx context.Context, sagaName, sagaID string) (*sec.Cont
 	sagaCtx := &sec.Context[[]byte]{
 		ID: sagaID,
 	}
-	err := s.db.QueryRowContext(ctx, s.table(query), sagaName, sagaID).Scan(&sagaCtx.Data, &sagaCtx.Step, &sagaCtx.Done, &sagaCtx.Compensating)
+	err := s.db.QueryRowContext(ctx, s.table(query), sagaName, sagaID).
+		Scan(&sagaCtx.Data, &sagaCtx.Step, &sagaCtx.Done, &sagaCtx.IsCompensating)
 
 	return sagaCtx, err
 }
 
 func (s sagaStore) Save(ctx context.Context, sagaName string, sagaCtx *sec.Context[[]byte]) error {
+	// Upsert saga state: insert if new, or update existing saga context by name and ID
 	const query = `INSERT INTO %s (name, id, data, step, done, compensating) 
 VALUES ($1, $2, $3, $4, $5, $6) 
 ON CONFLICT (name, id) DO
 UPDATE SET data = EXCLUDED.data, step = EXCLUDED.step, done = EXCLUDED.done, compensating = EXCLUDED.compensating`
 
-	_, err := s.db.ExecContext(ctx, s.table(query), sagaName, sagaCtx.ID, sagaCtx.Data, sagaCtx.Step, sagaCtx.Done, sagaCtx.Compensating)
+	_, err := s.db.ExecContext(ctx, s.table(query), sagaName, sagaCtx.ID, sagaCtx.Data, sagaCtx.Step, sagaCtx.Done, sagaCtx.IsCompensating)
 
 	return err
 }

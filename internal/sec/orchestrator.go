@@ -10,8 +10,11 @@ import (
 )
 
 type Orchestrator[T any] interface {
+	// Start begins the Saga execution from the first step.
 	Start(ctx context.Context, id string, data T) error
+	// ReplyTopic returns the topic on which this orchestrator listens for replies.
 	ReplyTopic() string
+	// HandleReply processes a reply message and determines the next Saga step.
 	HandleReply(ctx context.Context, reply ddd.Reply) error
 }
 
@@ -23,7 +26,11 @@ type orchestrator[T any] struct {
 
 var _ Orchestrator[any] = (*orchestrator[any])(nil)
 
-func NewOrchestrator[T any](saga Saga[T], repo repository[T], publisher am.CommandPublisher) orchestrator[T] {
+func NewOrchestrator[T any](
+	saga Saga[T],
+	repo repository[T],
+	publisher am.CommandPublisher,
+) orchestrator[T] {
 	return orchestrator[T]{
 		saga:      saga,
 		repo:      repo,
@@ -67,7 +74,7 @@ func (o orchestrator[T]) HandleReply(ctx context.Context, reply ddd.Reply) error
 		return err
 	}
 
-	result, err := o.handle(ctx, sagaCtx, reply)
+	result, err := o.handleReply(ctx, sagaCtx, reply)
 	if err != nil {
 		return err
 	}
@@ -75,46 +82,47 @@ func (o orchestrator[T]) HandleReply(ctx context.Context, reply ddd.Reply) error
 	return o.processResult(ctx, result)
 }
 
-func (o orchestrator[T]) handle(ctx context.Context, sagaCtx *Context[T], reply ddd.Reply) (stepResult[T], error) {
+func (o orchestrator[T]) handleReply(ctx context.Context, sagaCtx *Context[T], reply ddd.Reply) (stepResult[T], error) {
 	step := o.saga.getSteps()[sagaCtx.Step]
 
-	err := step.handle(ctx, sagaCtx, reply)
+	err := step.handleReply(ctx, sagaCtx, reply)
 	if err != nil {
 		return stepResult[T]{}, err
 	}
 
-	var success bool
+	var isSuccessful bool
 	if outcome, ok := reply.Metadata().Get(am.ReplyOutcomeHdr).(string); !ok {
-		success = false
+		isSuccessful = false
 	} else {
-		success = outcome == am.OutcomeSuccess
+		isSuccessful = outcome == am.OutcomeSuccess
 	}
 
-	switch {
-	case success:
-		return o.execute(ctx, sagaCtx), nil
-	case sagaCtx.Compensating:
-		return stepResult[T]{}, errors.ErrInternal.Msg("received failed reply but already compensating")
-	default:
-		sagaCtx.compensate()
+	if isSuccessful {
 		return o.execute(ctx, sagaCtx), nil
 	}
+
+	if sagaCtx.IsCompensating {
+		return stepResult[T]{}, errors.ErrInternal.Msg("received failed reply but already compensating")
+	}
+
+	sagaCtx.compensate()
+	return o.execute(ctx, sagaCtx), nil
 }
 
 func (o orchestrator[T]) execute(ctx context.Context, sagaCtx *Context[T]) stepResult[T] {
-	var delta = 1
-	var direction = 1
-	var step Step[T]
 
-	if sagaCtx.Compensating {
-		direction = -1
+	var direction = 1 // forward direction for normal steps
+	if sagaCtx.IsCompensating {
+		direction = -1 // backward direction for compensating steps
 	}
 
 	steps := o.saga.getSteps()
 	stepCount := len(steps)
 
+	var step Step[T]
+	var delta = 1
 	for i := sagaCtx.Step + direction; i > -1 && i < stepCount; i += direction {
-		if step = steps[i]; step != nil && step.isInvocable(sagaCtx.Compensating) {
+		if step = steps[i]; step != nil && step.isInvocable(sagaCtx.IsCompensating) {
 			break
 		}
 		delta += 1
@@ -127,11 +135,11 @@ func (o orchestrator[T]) execute(ctx context.Context, sagaCtx *Context[T]) stepR
 
 	sagaCtx.advance(delta)
 
-	return step.execute(ctx, sagaCtx)
+	return step.executeAction(ctx, sagaCtx)
 }
 
 func (o orchestrator[T]) processResult(ctx context.Context, result stepResult[T]) (err error) {
-	if result.cmd != nil {
+	if result.next != nil {
 		err = o.publishCommand(ctx, result)
 		if err != nil {
 			return
@@ -142,7 +150,7 @@ func (o orchestrator[T]) processResult(ctx context.Context, result stepResult[T]
 }
 
 func (o orchestrator[T]) publishCommand(ctx context.Context, result stepResult[T]) error {
-	cmd := result.cmd
+	cmd := result.next
 
 	cmd.Metadata().Set(am.CommandReplyChannelHdr, o.saga.ReplyTopic())
 	cmd.Metadata().Set(SagaCommandIDHdr, result.ctx.ID)

@@ -23,6 +23,7 @@ import (
 	"eda-in-golang/internal/runner"
 	"eda-in-golang/internal/web"
 	"eda-in-golang/modules/baskets"
+	"eda-in-golang/modules/cosec"
 	"eda-in-golang/modules/customers"
 	"eda-in-golang/modules/depot"
 	"eda-in-golang/modules/notifications"
@@ -91,6 +92,7 @@ func run() (err error) {
 		&payments.Module{},
 		&stores.Module{},
 		&search.Module{},
+		&cosec.Module{},
 	}
 
 	if err = m.startupModules(); err != nil {

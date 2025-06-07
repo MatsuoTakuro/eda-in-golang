@@ -13,16 +13,21 @@ const (
 )
 
 type Saga[T any] interface {
+	// AddStep returns a new step that can be added to the saga.
 	AddStep() Step[T]
+	// Name returns the name of the saga.
 	Name() string
+	// ReplyTopic returns the topic to which replies for this saga should be sent.
 	ReplyTopic() string
+	// getSteps returns the steps added to the saga.
 	getSteps() []Step[T]
 }
 
 type saga[T any] struct {
 	name       string
 	replyTopic string
-	steps      []Step[T]
+	// steps holds the steps to be executed in order how you added them.
+	steps []Step[T]
 }
 
 var _ Saga[any] = (*saga[any])(nil)
@@ -34,20 +39,15 @@ func NewSaga[T any](name, replyTopic string) *saga[T] {
 	}
 }
 
-const (
-	notCompensating bool = false
-	isCompensating  bool = true
-)
-
 func (s *saga[T]) AddStep() Step[T] {
 	step := &step[T]{
-		actions: map[bool]StepActionFunc[T]{
-			notCompensating: nil,
-			isCompensating:  nil,
+		actions: map[isCompensating]StepActionFunc[T]{
+			normal:       nil,
+			compensating: nil,
 		},
-		handlers: map[bool]map[string]StepReplyHandlerFunc[T]{
-			notCompensating: {},
-			isCompensating:  {},
+		replyHandlers: map[isCompensating]map[string]StepReplyHandlerFunc[T]{
+			normal:       {},
+			compensating: {},
 		},
 	}
 

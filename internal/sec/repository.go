@@ -45,11 +45,11 @@ func (r repository[T]) Load(ctx context.Context, sagaName, sagaID string) (*Cont
 	}
 
 	return &Context[T]{
-		ID:           byteCtx.ID,
-		Data:         data,
-		Step:         byteCtx.Step,
-		Done:         byteCtx.Done,
-		Compensating: byteCtx.Compensating,
+		ID:             byteCtx.ID,
+		Data:           data,
+		Step:           byteCtx.Step,
+		Done:           byteCtx.Done,
+		IsCompensating: byteCtx.IsCompensating,
 	}, nil
 }
 
@@ -60,10 +60,10 @@ func (r repository[T]) Save(ctx context.Context, sagaName string, sagaCtx *Conte
 	}
 
 	return r.store.Save(ctx, sagaName, &Context[[]byte]{
-		ID:           sagaCtx.ID,
-		Data:         data,
-		Step:         sagaCtx.Step,
-		Done:         sagaCtx.Done,
-		Compensating: sagaCtx.Compensating,
+		ID:             sagaCtx.ID,
+		Data:           data,
+		Step:           sagaCtx.Step,
+		Done:           sagaCtx.Done,
+		IsCompensating: sagaCtx.IsCompensating,
 	})
 }

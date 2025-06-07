@@ -2,26 +2,26 @@ package sec
 
 type StepOption[T any] func(step *step[T])
 
-func WithAction[T any](fn StepActionFunc[T]) StepOption[T] {
+func WithNormal[T any](fn StepActionFunc[T]) StepOption[T] {
 	return func(step *step[T]) {
-		step.actions[notCompensating] = fn
+		step.actions[normal] = fn
 	}
 }
 
 func WithCompensation[T any](fn StepActionFunc[T]) StepOption[T] {
 	return func(step *step[T]) {
-		step.actions[isCompensating] = fn
+		step.actions[compensating] = fn
 	}
 }
 
-func OnActionReply[T any](replyName string, fn StepReplyHandlerFunc[T]) StepOption[T] {
+func OnNormalReply[T any](replyName string, fn StepReplyHandlerFunc[T]) StepOption[T] {
 	return func(step *step[T]) {
-		step.handlers[notCompensating][replyName] = fn
+		step.replyHandlers[normal][replyName] = fn
 	}
 }
 
 func OnCompensationReply[T any](replyName string, fn StepReplyHandlerFunc[T]) StepOption[T] {
 	return func(step *step[T]) {
-		step.handlers[isCompensating][replyName] = fn
+		step.replyHandlers[compensating][replyName] = fn
 	}
 }

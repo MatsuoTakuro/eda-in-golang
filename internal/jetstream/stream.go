@@ -67,11 +67,17 @@ func (s *stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 		for {
 			select {
 			case <-future.Ok(): // publish acknowledged
-				s.logger.Info().
+				var logEvt *zerolog.Event
+				if rawMsg.MessageName() == am.FailureReply {
+					logEvt = s.logger.Error()
+				} else {
+					logEvt = s.logger.Info()
+				}
+				logEvt.
 					Any(moduleField, s.module).
 					Any(msgNameField, rawMsg.MessageName()).
 					Any(msgIDField, rawMsg.ID()).
-					Msg("acknowledged publishing message")
+					Msg("acked publishing message")
 				return
 			case <-future.Err(): // error ignored; try again
 				// TODO add some variable delay between tries
@@ -237,7 +243,13 @@ func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 				Msg("failed to ack received message")
 			return
 		}
-		s.logger.Info().
+		var logEvt *zerolog.Event
+		if msg.MessageName() == am.FailureReply {
+			logEvt = s.logger.Error()
+		} else {
+			logEvt = s.logger.Info()
+		}
+		logEvt.
 			Any(moduleField, s.module).
 			Any(msgNameField, msg.MessageName()).
 			Any(msgIDField, msg.ID()).
@@ -272,10 +284,11 @@ func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 				Msg("failed to nack received message")
 			return
 		}
-		s.logger.Info().
+		s.logger.Error().
 			Any(moduleField, s.module).
 			Any(msgNameField, msg.MessageName()).
 			Any(msgIDField, msg.ID()).
+			Err(err).
 			Msg("nacked received message")
 		return
 	}

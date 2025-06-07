@@ -114,6 +114,12 @@ func registerDomainEvents(reg registry.Registry) error {
 	if err := regtr.Register(domain.OrderCreated{}); err != nil {
 		return err
 	}
+	if err := regtr.Register(domain.OrderRejected{}); err != nil {
+		return err
+	}
+	if err := regtr.Register(domain.OrderApproved{}); err != nil {
+		return err
+	}
 	if err := regtr.Register(domain.OrderCanceled{}); err != nil {
 		return err
 	}
