@@ -18,7 +18,11 @@ type AckableMessage interface {
 // Message is a message interface that represents a message in the system.
 // It can be an event, command, or any other type of message.
 type Message interface {
+	// ID returns the unique identifier of the message.
 	ddd.IDer
+	// Subject returns the subject (topic) of the message.
+	Subject() string
+	// MessageName returns the type name of the message.
 	MessageName() string
 }
 

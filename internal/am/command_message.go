@@ -27,6 +27,7 @@ func (c commandMessage) CommandName() string         { return c.name }
 func (c commandMessage) Payload() ddd.CommandPayload { return c.payload }
 func (c commandMessage) Metadata() ddd.Metadata      { return c.metadata }
 func (c commandMessage) OccurredAt() time.Time       { return c.occurredAt }
+func (c commandMessage) Subject() string             { return c.msg.Subject() }
 func (c commandMessage) MessageName() string         { return c.msg.MessageName() }
 func (c commandMessage) Ack() error                  { return c.msg.Ack() }
 func (c commandMessage) NAck() error                 { return c.msg.NAck() }
