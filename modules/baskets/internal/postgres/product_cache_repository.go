@@ -4,32 +4,32 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/stackus/errors"
 
+	"eda-in-golang/internal/postgres"
 	"eda-in-golang/modules/baskets/internal/domain"
 )
 
-type productCacheRepository struct {
+type ProductCacheRepository struct {
 	tableName string
-	db        *sql.DB
-	fallback  domain.ProductClient
+	db        postgres.DB
+	fallback  domain.ProductRepository
 }
 
-var _ domain.ProductCacheRepository = (*productCacheRepository)(nil)
+var _ domain.ProductCacheRepository = (*ProductCacheRepository)(nil)
 
-func NewProductCacheRepository(tableName string, db *sql.DB, fallback domain.ProductClient) productCacheRepository {
-	return productCacheRepository{
+func NewProductCacheRepository(tableName string, db postgres.DB, fallback domain.ProductRepository) ProductCacheRepository {
+	return ProductCacheRepository{
 		tableName: tableName,
 		db:        db,
 		fallback:  fallback,
 	}
 }
 
-func (r productCacheRepository) Add(ctx context.Context, productID, storeID, name string, price float64) error {
+func (r ProductCacheRepository) Add(ctx context.Context, productID, storeID, name string, price float64) error {
 	const query = `INSERT INTO %s (id, store_id, name, price) VALUES ($1, $2, $3, $4)`
 
 	_, err := r.db.ExecContext(ctx, r.table(query), productID, storeID, name, price)
@@ -45,7 +45,7 @@ func (r productCacheRepository) Add(ctx context.Context, productID, storeID, nam
 	return err
 }
 
-func (r productCacheRepository) Rebrand(ctx context.Context, productID, name string) error {
+func (r ProductCacheRepository) Rebrand(ctx context.Context, productID, name string) error {
 	const query = `UPDATE %s SET name = $2 WHERE id = $1`
 
 	_, err := r.db.ExecContext(ctx, r.table(query), productID, name)
@@ -53,7 +53,7 @@ func (r productCacheRepository) Rebrand(ctx context.Context, productID, name str
 	return err
 }
 
-func (r productCacheRepository) UpdatePrice(ctx context.Context, productID string, delta float64) error {
+func (r ProductCacheRepository) UpdatePrice(ctx context.Context, productID string, delta float64) error {
 	const query = `UPDATE %s SET price = price + $2 WHERE id = $1`
 
 	_, err := r.db.ExecContext(ctx, r.table(query), productID, delta)
@@ -61,7 +61,7 @@ func (r productCacheRepository) UpdatePrice(ctx context.Context, productID strin
 	return err
 }
 
-func (r productCacheRepository) Remove(ctx context.Context, productID string) error {
+func (r ProductCacheRepository) Remove(ctx context.Context, productID string) error {
 	const query = `DELETE FROM %s WHERE id = $1`
 
 	_, err := r.db.ExecContext(ctx, r.table(query), productID)
@@ -69,7 +69,7 @@ func (r productCacheRepository) Remove(ctx context.Context, productID string) er
 	return err
 }
 
-func (r productCacheRepository) Find(ctx context.Context, productID string) (*domain.Product, error) {
+func (r ProductCacheRepository) Find(ctx context.Context, productID string) (*domain.Product, error) {
 	const query = `SELECT store_id, name, price FROM %s WHERE id = $1 LIMIT 1`
 
 	product := &domain.Product{
@@ -81,7 +81,6 @@ func (r productCacheRepository) Find(ctx context.Context, productID string) (*do
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.Wrap(err, "scanning product")
 		}
-		log.Printf("Product %s not found in cache, falling back to service...", productID)
 		product, err = r.fallback.Find(ctx, productID)
 		if err != nil {
 			return nil, errors.Wrap(err, "product fallback failed")
@@ -93,6 +92,6 @@ func (r productCacheRepository) Find(ctx context.Context, productID string) (*do
 	return product, nil
 }
 
-func (r productCacheRepository) table(query string) string {
+func (r ProductCacheRepository) table(query string) string {
 	return fmt.Sprintf(query, r.tableName)
 }

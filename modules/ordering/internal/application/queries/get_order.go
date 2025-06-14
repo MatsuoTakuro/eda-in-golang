@@ -6,7 +6,6 @@ import (
 	"github.com/stackus/errors"
 
 	"eda-in-golang/modules/ordering/internal/domain"
-	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
 type GetOrder struct {
@@ -14,15 +13,15 @@ type GetOrder struct {
 }
 
 type GetOrderHandler struct {
-	orderRepo infra.OrderRepository
+	repo domain.OrderRepository
 }
 
-func NewGetOrderHandler(orderRepo infra.OrderRepository) GetOrderHandler {
-	return GetOrderHandler{orderRepo: orderRepo}
+func NewGetOrderHandler(repo domain.OrderRepository) GetOrderHandler {
+	return GetOrderHandler{repo: repo}
 }
 
 func (h GetOrderHandler) GetOrder(ctx context.Context, query GetOrder) (*domain.Order, error) {
-	order, err := h.orderRepo.Load(ctx, query.ID)
+	order, err := h.repo.Load(ctx, query.ID)
 
 	return order, errors.Wrap(err, "get order query")
 }

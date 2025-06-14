@@ -7,5 +7,5 @@ import (
 type StoreCacheRepository interface {
 	Add(ctx context.Context, storeID, name string) error
 	Rename(ctx context.Context, storeID, name string) error
-	StoreClient
+	StoreRepository
 }

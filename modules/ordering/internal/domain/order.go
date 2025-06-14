@@ -5,7 +5,6 @@ import (
 
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/es"
-	"eda-in-golang/internal/registry"
 )
 
 const OrderAggregate = "ordering.Order"
@@ -28,11 +27,10 @@ type Order struct {
 	Status     OrderStatus
 }
 
-var (
-	_ es.Hydrator              = (*Order)(nil)
-	_ es.EventSourcedAggregate = (*Order)(nil)
-	_ registry.Registrable     = (*Order)(nil)
-)
+var _ interface {
+	es.EventApplier
+	es.Snapshotter
+} = (*Order)(nil)
 
 func NewOrder(id string) *Order {
 	return &Order{

@@ -3,12 +3,12 @@ package rest
 import (
 	"context"
 
-	"eda-in-golang/modules/payments/paymentspb"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"eda-in-golang/modules/payments/paymentspb"
 )
 
 func RegisterGateway(ctx context.Context, mux *chi.Mux, grpcAddr string) error {

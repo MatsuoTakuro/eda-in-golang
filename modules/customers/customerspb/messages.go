@@ -18,44 +18,33 @@ const (
 	AuthorizeCustomerCommand = "customersapi.AuthorizeCustomer"
 )
 
-func RegisterMessages(reg registry.Registry) error {
-	regtr := registrar.NewProtoRegistrar(reg)
+func Registrations(reg registry.Registry) error {
+	serde := registrar.NewProtoRegistrar(reg)
 
 	// Customer events
-	if err := regtr.Register(&CustomerRegistered{}); err != nil {
+	if err := serde.Register(&CustomerRegistered{}); err != nil {
 		return err
 	}
-	if err := regtr.Register(&CustomerSmsChanged{}); err != nil {
+	if err := serde.Register(&CustomerSmsChanged{}); err != nil {
 		return err
 	}
-	if err := regtr.Register(&CustomerEnabled{}); err != nil {
+	if err := serde.Register(&CustomerEnabled{}); err != nil {
 		return err
 	}
-	if err := regtr.Register(&CustomerDisabled{}); err != nil {
+	if err := serde.Register(&CustomerDisabled{}); err != nil {
 		return err
 	}
 
 	// commands
-	if err := regtr.Register(&AuthorizeCustomer{}); err != nil {
+	if err := serde.Register(&AuthorizeCustomer{}); err != nil {
 		return err
 	}
 	return nil
 }
 
-var (
-	_ registry.Registrable = (*CustomerRegistered)(nil)
-	_ registry.Registrable = (*CustomerSmsChanged)(nil)
-	_ registry.Registrable = (*CustomerEnabled)(nil)
-	_ registry.Registrable = (*CustomerDisabled)(nil)
-)
-
 func (*CustomerRegistered) Key() string { return CustomerRegisteredEvent }
 func (*CustomerSmsChanged) Key() string { return CustomerSmsChangedEvent }
 func (*CustomerEnabled) Key() string    { return CustomerEnabledEvent }
 func (*CustomerDisabled) Key() string   { return CustomerDisabledEvent }
-
-var (
-	_ registry.Registrable = (*AuthorizeCustomer)(nil)
-)
 
 func (*AuthorizeCustomer) Key() string { return AuthorizeCustomerCommand }

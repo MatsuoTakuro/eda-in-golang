@@ -9,5 +9,5 @@ type ProductCacheRepository interface {
 	Rebrand(ctx context.Context, productID, name string) error
 	UpdatePrice(ctx context.Context, productID string, delta float64) error
 	Remove(ctx context.Context, productID string) error
-	ProductClient
+	ProductRepository
 }

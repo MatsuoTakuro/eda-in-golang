@@ -17,9 +17,9 @@ type sagaReplyHandlers[T any] struct {
 
 var _ sec.Orchestrator[any] = (*sagaReplyHandlers[any])(nil)
 
-func LogReplyHandlerAccess[T any](orch sec.Orchestrator[T], label string, logger zerolog.Logger) sec.Orchestrator[T] {
+func LogReplyHandlerAccess[T any](orc sec.Orchestrator[T], label string, logger zerolog.Logger) sec.Orchestrator[T] {
 	return sagaReplyHandlers[T]{
-		Orchestrator: orch,
+		Orchestrator: orc,
 		label:        label,
 		logger:       logger,
 	}

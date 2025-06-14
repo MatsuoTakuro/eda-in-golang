@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"log"
 )
 
 type (
@@ -42,18 +41,18 @@ func New(customers CustomerRepository) *Application {
 
 func (a Application) NotifyOrderCreated(ctx context.Context, notify OrderCreated) error {
 	// not implemented
-	log.Println("notify order created called with:", notify.OrderID)
+
 	return nil
 }
 
 func (a Application) NotifyOrderCanceled(ctx context.Context, notify OrderCanceled) error {
 	// not implemented
-	log.Println("notify order canceled called with:", notify.OrderID)
+
 	return nil
 }
 
 func (a Application) NotifyOrderReady(ctx context.Context, notify OrderReady) error {
 	// not implemented
-	log.Println("notify order ready called with:", notify.OrderID)
+
 	return nil
 }

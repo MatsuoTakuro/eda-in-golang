@@ -16,10 +16,20 @@ type integrationHandlers[T ddd.Event] struct {
 
 var _ ddd.EventHandler[ddd.Event] = (*integrationHandlers[ddd.Event])(nil)
 
-func NewIntegrationEventHandlers(orch sec.Orchestrator[*models.CreateOrderData]) ddd.EventHandler[ddd.Event] {
+func NewIntegrationEventHandlers(saga sec.Orchestrator[*models.CreateOrderData]) ddd.EventHandler[ddd.Event] {
 	return integrationHandlers[ddd.Event]{
-		orchestrator: orch,
+		orchestrator: saga,
 	}
+}
+
+func RegisterIntegrationEventHandlers(subscriber am.EventSubscriber, handlers ddd.EventHandler[ddd.Event]) (err error) {
+	evtMsgHandler := am.MessageHandlerFunc[am.EventMessage](func(ctx context.Context, eventMsg am.EventMessage) error {
+		return handlers.HandleEvent(ctx, eventMsg)
+	})
+
+	return subscriber.Subscribe(orderingpb.OrderAggregateChannel, evtMsgHandler, am.MessageFilter{
+		orderingpb.OrderCreatedEvent,
+	}, am.GroupName("cosec-ordering"))
 }
 
 func (h integrationHandlers[T]) HandleEvent(ctx context.Context, event T) error {
@@ -56,14 +66,4 @@ func (h integrationHandlers[T]) onOrderCreated(ctx context.Context, event ddd.Ev
 
 	// Start the CreateOrderSaga
 	return h.orchestrator.Start(ctx, event.ID(), data)
-}
-
-func SubscribeIntegrationEvents(subscriber am.EventSubscriber, handlers ddd.EventHandler[ddd.Event]) (err error) {
-	evtMsgHandler := am.MessageHandlerFunc[am.EventMessage](func(ctx context.Context, eventMsg am.EventMessage) error {
-		return handlers.HandleEvent(ctx, eventMsg)
-	})
-
-	return subscriber.Subscribe(orderingpb.OrderAggregateChannel, evtMsgHandler, am.MessageFilter{
-		orderingpb.OrderCreatedEvent,
-	}, am.GroupName("cosec-ordering"))
 }

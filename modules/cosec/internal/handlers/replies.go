@@ -8,7 +8,7 @@ import (
 	"eda-in-golang/modules/cosec/internal/models"
 )
 
-func SubscribeReplies(subscriber am.ReplySubscriber, orchestrator sec.Orchestrator[*models.CreateOrderData]) error {
+func RegisterReplyHandlers(subscriber am.ReplySubscriber, orchestrator sec.Orchestrator[*models.CreateOrderData]) error {
 	replyMsgHandler := am.MessageHandlerFunc[am.ReplyMessage](func(ctx context.Context, replyMsg am.ReplyMessage) error {
 		return orchestrator.HandleReply(ctx, replyMsg)
 	})

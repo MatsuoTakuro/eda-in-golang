@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"eda-in-golang/internal/am"
+	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/jetstream"
 	"eda-in-golang/internal/monolith"
 	"eda-in-golang/internal/registry"
@@ -21,13 +22,15 @@ type Module struct{}
 func (m Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 	// setup Driven adapters
 	reg := registry.New()
-	if err = customerspb.RegisterMessages(reg); err != nil {
+	if err = customerspb.Registrations(reg); err != nil {
 		return err
 	}
-	if err = orderingpb.RegisterMessages(reg); err != nil {
+	if err = orderingpb.Registrations(reg); err != nil {
 		return err
 	}
-	eventStream := am.NewEventStream(reg, jetstream.NewStream("notifications", mono.Config().Nats.Stream, mono.JS(), mono.Logger()))
+	eventStream := am.NewEventStream(reg,
+		jetstream.NewStream("notifications", mono.Config().Nats.Stream, mono.JS(), mono.Logger()),
+	)
 	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
 	if err != nil {
 		return err
@@ -39,23 +42,16 @@ func (m Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 		application.New(customers),
 		mono.Logger(),
 	)
-	customerHandlers := logging.LogEventHandlerAccess(
-		application.NewCustomerHandlers(customers),
-		"Customer", mono.Logger(),
-	)
-	orderHandlers := logging.LogEventHandlerAccess(
-		application.NewOrderHandlers(app),
-		"Order", mono.Logger(),
+	integrationEventHandlers := logging.LogEventHandlerAccess[ddd.Event](
+		handlers.NewIntegrationEventHandlers(app, customers),
+		"IntegrationEvents", mono.Logger(),
 	)
 
 	// setup Driver adapters
 	if err := grpc.RegisterServer(ctx, app, mono.RPC()); err != nil {
 		return err
 	}
-	if err = handlers.SubscribeCustomerIntegrationEvents(customerHandlers, eventStream); err != nil {
-		return err
-	}
-	if err = handlers.SubscribeOrderIntegrationEvents(orderHandlers, eventStream); err != nil {
+	if err = handlers.RegisterIntegrationEventHandlers(eventStream, integrationEventHandlers); err != nil {
 		return err
 	}
 

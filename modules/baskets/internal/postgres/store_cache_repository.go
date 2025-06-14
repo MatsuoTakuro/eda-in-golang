@@ -4,32 +4,32 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/stackus/errors"
 
+	"eda-in-golang/internal/postgres"
 	"eda-in-golang/modules/baskets/internal/domain"
 )
 
-type storeCacheRepository struct {
+type StoreCacheRepository struct {
 	tableName string
-	db        *sql.DB
-	fallback  domain.StoreClient
+	db        postgres.DB
+	fallback  domain.StoreRepository
 }
 
-var _ domain.StoreCacheRepository = (*storeCacheRepository)(nil)
+var _ domain.StoreCacheRepository = (*StoreCacheRepository)(nil)
 
-func NewStoreCacheRepository(tableName string, db *sql.DB, fallback domain.StoreClient) storeCacheRepository {
-	return storeCacheRepository{
+func NewStoreCacheRepository(tableName string, db postgres.DB, fallback domain.StoreRepository) StoreCacheRepository {
+	return StoreCacheRepository{
 		tableName: tableName,
 		db:        db,
 		fallback:  fallback,
 	}
 }
 
-func (r storeCacheRepository) Add(ctx context.Context, storeID, name string) error {
+func (r StoreCacheRepository) Add(ctx context.Context, storeID, name string) error {
 	const query = "INSERT INTO %s (id, name) VALUES ($1, $2)"
 
 	_, err := r.db.ExecContext(ctx, r.table(query), storeID, name)
@@ -45,7 +45,7 @@ func (r storeCacheRepository) Add(ctx context.Context, storeID, name string) err
 	return err
 }
 
-func (r storeCacheRepository) Rename(ctx context.Context, storeID, name string) error {
+func (r StoreCacheRepository) Rename(ctx context.Context, storeID, name string) error {
 	const query = "UPDATE %s SET name = $2 WHERE id = $1"
 
 	_, err := r.db.ExecContext(ctx, r.table(query), storeID, name)
@@ -53,7 +53,7 @@ func (r storeCacheRepository) Rename(ctx context.Context, storeID, name string) 
 	return err
 }
 
-func (r storeCacheRepository) Find(ctx context.Context, storeID string) (*domain.Store, error) {
+func (r StoreCacheRepository) Find(ctx context.Context, storeID string) (*domain.Store, error) {
 	const query = "SELECT name FROM %s WHERE id = $1 LIMIT 1"
 
 	store := &domain.Store{
@@ -65,7 +65,6 @@ func (r storeCacheRepository) Find(ctx context.Context, storeID string) (*domain
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.Wrap(err, "scanning store")
 		}
-		log.Printf("store %s not found in cache, falling back to service...", storeID)
 		store, err = r.fallback.Find(ctx, storeID)
 		if err != nil {
 			return nil, errors.Wrap(err, "store fallback failed")
@@ -77,6 +76,6 @@ func (r storeCacheRepository) Find(ctx context.Context, storeID string) (*domain
 	return store, nil
 }
 
-func (r storeCacheRepository) table(query string) string {
+func (r StoreCacheRepository) table(query string) string {
 	return fmt.Sprintf(query, r.tableName)
 }

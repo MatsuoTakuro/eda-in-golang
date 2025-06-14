@@ -9,19 +9,20 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/stackus/errors"
 
+	"eda-in-golang/internal/postgres"
 	"eda-in-golang/modules/search/internal/application"
 	"eda-in-golang/modules/search/internal/models"
 )
 
 type ProductCacheRepository struct {
 	tableName string
-	db        *sql.DB
+	db        postgres.DB
 	fallback  application.ProductRepository
 }
 
 var _ application.ProductCacheRepository = (*ProductCacheRepository)(nil)
 
-func NewProductCacheRepository(tableName string, db *sql.DB, fallback application.ProductRepository) ProductCacheRepository {
+func NewProductCacheRepository(tableName string, db postgres.DB, fallback application.ProductRepository) ProductCacheRepository {
 	return ProductCacheRepository{
 		tableName: tableName,
 		db:        db,
@@ -29,10 +30,10 @@ func NewProductCacheRepository(tableName string, db *sql.DB, fallback applicatio
 	}
 }
 
-func (r ProductCacheRepository) Add(ctx context.Context, productID, storeID, name string, price float64) error {
-	const query = `INSERT INTO %s (id, store_id, name, price) VALUES ($1, $2, $3, $4)`
+func (r ProductCacheRepository) Add(ctx context.Context, productID, storeID, name string) error {
+	const query = `INSERT INTO %s (id, store_id, name) VALUES ($1, $2, $3)`
 
-	_, err := r.db.ExecContext(ctx, r.table(query), productID, storeID, name, price)
+	_, err := r.db.ExecContext(ctx, r.table(query), productID, storeID, name)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -78,7 +79,7 @@ func (r ProductCacheRepository) Find(ctx context.Context, productID string) (*mo
 			return nil, errors.Wrap(err, "product fallback failed")
 		}
 		// attempt to add it to the cache
-		return product, r.Add(ctx, product.ID, product.StoreID, product.Name, product.Price)
+		return product, r.Add(ctx, product.ID, product.StoreID, product.Name)
 	}
 
 	return product, nil

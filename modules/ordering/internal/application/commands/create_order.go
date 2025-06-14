@@ -7,7 +7,6 @@ import (
 
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/modules/ordering/internal/domain"
-	"eda-in-golang/modules/ordering/internal/domain/infra"
 )
 
 type CreateOrder struct {
@@ -17,23 +16,20 @@ type CreateOrder struct {
 	Items      []domain.Item
 }
 
-type CreateOrderCommander struct {
-	orderRepo infra.OrderRepository
+type CreateOrderHandler struct {
+	orders    domain.OrderRepository
 	publisher ddd.EventPublisher[ddd.Event]
 }
 
-func NewCreateOrderCommander(
-	orderRepo infra.OrderRepository,
-	publisher ddd.EventPublisher[ddd.Event],
-) CreateOrderCommander {
-	return CreateOrderCommander{
-		orderRepo: orderRepo,
+func NewCreateOrderHandler(orders domain.OrderRepository, publisher ddd.EventPublisher[ddd.Event]) CreateOrderHandler {
+	return CreateOrderHandler{
+		orders:    orders,
 		publisher: publisher,
 	}
 }
 
-func (c CreateOrderCommander) CreateOrder(ctx context.Context, cmd CreateOrder) error {
-	order, err := c.orderRepo.Load(ctx, cmd.ID)
+func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) error {
+	order, err := h.orders.Load(ctx, cmd.ID)
 	if err != nil {
 		return err
 	}
@@ -43,9 +39,9 @@ func (c CreateOrderCommander) CreateOrder(ctx context.Context, cmd CreateOrder) 
 		return errors.Wrap(err, "create order command")
 	}
 
-	if err = c.orderRepo.Save(ctx, order); err != nil {
+	if err = h.orders.Save(ctx, order); err != nil {
 		return errors.Wrap(err, "order creation")
 	}
 
-	return c.publisher.Publish(ctx, event)
+	return h.publisher.Publish(ctx, event)
 }

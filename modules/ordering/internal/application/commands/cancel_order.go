@@ -4,33 +4,27 @@ import (
 	"context"
 
 	"eda-in-golang/internal/ddd"
-	"eda-in-golang/modules/ordering/internal/domain/infra"
+	"eda-in-golang/modules/ordering/internal/domain"
 )
 
 type CancelOrder struct {
 	ID string
 }
 
-type CancelOrderCommander struct {
-	orderRepo      infra.OrderRepository
-	shoppingClient infra.ShoppingClient
-	publisher      ddd.EventPublisher[ddd.Event]
+type CancelOrderHandler struct {
+	orders    domain.OrderRepository
+	publisher ddd.EventPublisher[ddd.Event]
 }
 
-func NewCancelOrderCommander(
-	orderRepo infra.OrderRepository,
-	shoppingClient infra.ShoppingClient,
-	publisher ddd.EventPublisher[ddd.Event],
-) CancelOrderCommander {
-	return CancelOrderCommander{
-		orderRepo:      orderRepo,
-		shoppingClient: shoppingClient,
-		publisher:      publisher,
+func NewCancelOrderHandler(orders domain.OrderRepository, publisher ddd.EventPublisher[ddd.Event]) CancelOrderHandler {
+	return CancelOrderHandler{
+		orders:    orders,
+		publisher: publisher,
 	}
 }
 
-func (c CancelOrderCommander) CancelOrder(ctx context.Context, cmd CancelOrder) error {
-	order, err := c.orderRepo.Load(ctx, cmd.ID)
+func (h CancelOrderHandler) CancelOrder(ctx context.Context, cmd CancelOrder) error {
+	order, err := h.orders.Load(ctx, cmd.ID)
 	if err != nil {
 		return err
 	}
@@ -40,13 +34,14 @@ func (c CancelOrderCommander) CancelOrder(ctx context.Context, cmd CancelOrder) 
 		return err
 	}
 
-	if err = c.shoppingClient.Cancel(ctx, order.ShoppingID); err != nil {
+	// // TODO CH8 remove; handled in the saga
+	// if err = h.shopping.Cancel(ctx, order.ShoppingID); err != nil {
+	// 	return err
+	// }
+
+	if err = h.orders.Save(ctx, order); err != nil {
 		return err
 	}
 
-	if err = c.orderRepo.Save(ctx, order); err != nil {
-		return err
-	}
-
-	return c.publisher.Publish(ctx, event)
+	return h.publisher.Publish(ctx, event)
 }

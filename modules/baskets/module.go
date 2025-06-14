@@ -2,15 +2,21 @@ package baskets
 
 import (
 	"context"
+	"database/sql"
+
+	"github.com/rs/zerolog"
 
 	"eda-in-golang/internal/am"
 	"eda-in-golang/internal/ddd"
+	"eda-in-golang/internal/di"
 	"eda-in-golang/internal/es"
 	"eda-in-golang/internal/jetstream"
 	"eda-in-golang/internal/monolith"
 	pg "eda-in-golang/internal/postgres"
 	"eda-in-golang/internal/registry"
 	"eda-in-golang/internal/registry/registrar"
+	"eda-in-golang/internal/tm"
+	"eda-in-golang/modules/baskets/basketspb"
 	"eda-in-golang/modules/baskets/internal/application"
 	"eda-in-golang/modules/baskets/internal/domain"
 	"eda-in-golang/modules/baskets/internal/grpc"
@@ -24,50 +30,123 @@ import (
 type Module struct{}
 
 func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
+	container := di.New()
 	// setup Driven adapters
-	reg := registry.New()
-	if err = registerDomainEvents(reg); err != nil {
-		return err
-	}
-	if err = storespb.RegisterMessages(reg); err != nil {
-		return err
-	}
-	eventStream := am.NewEventStream(reg, jetstream.NewStream("baskets", mono.Config().Nats.Stream, mono.JS(), mono.Logger()))
-	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
-	aggregateStore := es.AggregateStoreWithMiddleware(
-		pg.NewEventStore("baskets.events", mono.DB(), reg),
-		es.WithEventPublisher(domainDispatcher),
-		pg.WithSnapshotStore("baskets.snapshots", mono.DB(), reg),
-	)
-	baskets := es.NewAggregateRepository[*domain.Basket](domain.BasketAggregate, reg, aggregateStore)
-	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
-	if err != nil {
-		return err
-	}
-	stores := postgres.NewStoreCacheRepository("baskets.stores_cache", mono.DB(), grpc.NewStoreClient(conn))
-	products := postgres.NewProductCacheRepository("baskets.products_cache", mono.DB(), grpc.NewProductClient(conn))
-	orders := grpc.NewOrderClient(conn)
+	container.AddSingleton("registry", func(c di.Container) (any, error) {
+		reg := registry.New()
+		if err := registrations(reg); err != nil {
+			return nil, err
+		}
+		if err := basketspb.Registrations(reg); err != nil {
+			return nil, err
+		}
+		if err := storespb.RegisterMessages(reg); err != nil {
+			return nil, err
+		}
+		return reg, nil
+	})
+	container.AddSingleton("logger", func(c di.Container) (any, error) {
+		return mono.Logger(), nil
+	})
+	container.AddSingleton("stream", func(c di.Container) (any, error) {
+		return jetstream.NewStream("baskets", mono.Config().Nats.Stream, mono.JS(), c.Get("logger").(zerolog.Logger)), nil
+	})
+	container.AddSingleton("domainDispatcher", func(c di.Container) (any, error) {
+		return ddd.NewEventDispatcher[ddd.Event](), nil
+	})
+	container.AddSingleton("db", func(c di.Container) (any, error) {
+		return mono.DB(), nil
+	})
+	container.AddSingleton("conn", func(c di.Container) (any, error) {
+		return grpc.Dial(ctx, mono.Config().Rpc.Address())
+	})
+	container.AddSingleton("outboxProcessor", func(c di.Container) (any, error) {
+		return tm.NewOutboxProcessor(
+			c.Get("stream").(am.RawMessageStream),
+			pg.NewOutboxStore("baskets.outbox", c.Get("db").(*sql.DB)),
+		), nil
+	})
+	container.AddScoped("tx", func(c di.Container) (any, error) {
+		db := c.Get("db").(*sql.DB)
+		return db.Begin()
+	})
+	container.AddScoped("txStream", func(c di.Container) (any, error) {
+		tx := c.Get("tx").(*sql.Tx)
+		outboxStore := pg.NewOutboxStore("baskets.outbox", tx)
+		return am.WithRawMessageStreamMiddlewares(
+			c.Get("stream").(am.RawMessageStream),
+			tm.WithOutboxStream(outboxStore),
+		), nil
+	})
+
+	container.AddScoped("eventStream", func(c di.Container) (any, error) {
+		return am.NewEventStream(c.Get("registry").(registry.Registry), c.Get("txStream").(am.RawMessageStream)), nil
+	})
+	container.AddScoped("inboxMiddleware", func(c di.Container) (any, error) {
+		tx := c.Get("tx").(*sql.Tx)
+		inboxStore := pg.NewInboxStore("baskets.inbox", tx)
+		return tm.WithInboxHandler(inboxStore), nil
+	})
+	container.AddScoped("aggregateStore", func(c di.Container) (any, error) {
+		tx := c.Get("tx").(*sql.Tx)
+		reg := c.Get("registry").(registry.Registry)
+		return es.AggregateStoreWithMiddleware(
+			pg.NewEventStore("baskets.events", tx, reg),
+			pg.WithSnapshotStore("baskets.snapshots", tx, reg),
+		), nil
+	})
+	container.AddScoped("baskets", func(c di.Container) (any, error) {
+		return es.NewAggregateRepository[*domain.Basket](
+			domain.BasketAggregate,
+			c.Get("registry").(registry.Registry),
+			c.Get("aggregateStore").(es.AggregateStore),
+		), nil
+	})
+	container.AddScoped("stores", func(c di.Container) (any, error) {
+		return postgres.NewStoreCacheRepository(
+			"baskets.stores_cache",
+			c.Get("tx").(*sql.Tx),
+			grpc.NewStoreRepository(c.Get("conn").(*grpc.ClientConn)),
+		), nil
+	})
+	container.AddScoped("products", func(c di.Container) (any, error) {
+		return postgres.NewProductCacheRepository(
+			"baskets.products_cache",
+			c.Get("tx").(*sql.Tx),
+			grpc.NewProductRepository(c.Get("conn").(*grpc.ClientConn)),
+		), nil
+	})
 
 	// setup application
-	app := logging.LogApplicationAccess(
-		application.New(baskets, stores, products, orders),
-		mono.Logger(),
-	)
-	orderHandlers := logging.LogEventHandlerAccess(
-		application.NewOrderHandlers(orders),
-		"Order", mono.Logger(),
-	)
-	storeHandler := logging.LogEventHandlerAccess(
-		application.NewStoreHandler(stores),
-		"Store", mono.Logger(),
-	)
-	productHandlers := logging.LogEventHandlerAccess(
-		application.NewProductHandler(products),
-		"Product", mono.Logger(),
-	)
+	container.AddScoped("app", func(c di.Container) (any, error) {
+		return logging.LogApplicationAccess(
+			application.New(
+				c.Get("baskets").(domain.BasketRepository),
+				c.Get("stores").(domain.StoreCacheRepository),
+				c.Get("products").(domain.ProductCacheRepository),
+				c.Get("domainDispatcher").(ddd.EventDispatcher[ddd.Event]),
+			),
+			c.Get("logger").(zerolog.Logger),
+		), nil
+	})
+	container.AddScoped("domainEventHandlers", func(c di.Container) (any, error) {
+		return logging.LogEventHandlerAccess[ddd.Event](
+			handlers.NewDomainEventHandlers(c.Get("eventStream").(am.EventStream)),
+			"DomainEvents", c.Get("logger").(zerolog.Logger),
+		), nil
+	})
+	container.AddScoped("integrationEventHandlers", func(c di.Container) (any, error) {
+		return logging.LogEventHandlerAccess[ddd.Event](
+			handlers.NewIntegrationEventHandlers(
+				c.Get("stores").(domain.StoreCacheRepository),
+				c.Get("products").(domain.ProductCacheRepository),
+			),
+			"IntegrationEvents", c.Get("logger").(zerolog.Logger),
+		), nil
+	})
 
 	// setup Driver adapters
-	if err = grpc.RegisterServer(app, mono.RPC()); err != nil {
+	if err = grpc.RegisterServerTx(container, mono.RPC()); err != nil {
 		return err
 	}
 	if err = rest.RegisterGateway(ctx, mono.Mux(), mono.Config().Rpc.Address()); err != nil {
@@ -76,24 +155,20 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 	if err = rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
-	handlers.SubscribeDomainEventsForOrder(orderHandlers, domainDispatcher)
-	if err = handlers.SubscribeStoreIntegrationEvents(storeHandler, eventStream); err != nil {
+	handlers.RegisterDomainEventHandlersTx(container)
+	if err = handlers.RegisterIntegrationEventHandlersTx(container); err != nil {
 		return err
 	}
-	if err = handlers.SubscribeProductIntegrationEvents(productHandlers, eventStream); err != nil {
-		return err
-	}
-
+	startOutboxProcessor(ctx, container)
 	return
 }
 
-func registerDomainEvents(reg registry.Registry) error {
+func registrations(reg registry.Registry) error {
 	regtr := registrar.NewJsonRegistrar(reg)
 
 	// Basket
 	if err := regtr.Register(domain.Basket{}, func(v interface{}) error {
 		basket := v.(*domain.Basket)
-		basket.Aggregate = es.NewAggregate("", domain.BasketAggregate)
 		basket.Items = make(map[string]domain.Item)
 		return nil
 	}); err != nil {
@@ -121,4 +196,16 @@ func registerDomainEvents(reg registry.Registry) error {
 	}
 
 	return nil
+}
+
+func startOutboxProcessor(ctx context.Context, container di.Container) {
+	outboxProcessor := container.Get("outboxProcessor").(tm.OutboxProcessor)
+	logger := container.Get("logger").(zerolog.Logger)
+
+	go func() {
+		err := outboxProcessor.Start(ctx)
+		if err != nil {
+			logger.Error().Err(err).Msg("baskets outbox processor encountered an error")
+		}
+	}()
 }

@@ -13,17 +13,17 @@ const (
 	BasketCheckedOutEvent = "basketsapi.BasketCheckedOut"
 )
 
-func RegisterMessages(reg registry.Registry) error {
-	regtr := registrar.NewProtoRegistrar(reg)
+func Registrations(reg registry.Registry) error {
+	regstr := registrar.NewProtoRegistrar(reg)
 
 	// Basket events
-	if err := regtr.Register(&BasketStarted{}); err != nil {
+	if err := regstr.Register(&BasketStarted{}); err != nil {
 		return err
 	}
-	if err := regtr.Register(&BasketCanceled{}); err != nil {
+	if err := regstr.Register(&BasketCanceled{}); err != nil {
 		return err
 	}
-	if err := regtr.Register(&BasketCheckedOut{}); err != nil {
+	if err := regstr.Register(&BasketCheckedOut{}); err != nil {
 		return err
 	}
 

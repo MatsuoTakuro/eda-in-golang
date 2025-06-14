@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"eda-in-golang/internal/ddd"
-	"eda-in-golang/modules/ordering/internal/domain/infra"
+	"eda-in-golang/modules/ordering/internal/domain"
 )
 
 type CompleteOrder struct {
@@ -12,20 +12,20 @@ type CompleteOrder struct {
 	InvoiceID string
 }
 
-type CompleteOrderCommander struct {
-	orderRepo infra.OrderRepository
+type CompleteOrderHandler struct {
+	orders    domain.OrderRepository
 	publisher ddd.EventPublisher[ddd.Event]
 }
 
-func NewCompleteOrderCommander(orderRepo infra.OrderRepository, publisher ddd.EventPublisher[ddd.Event]) CompleteOrderCommander {
-	return CompleteOrderCommander{
-		orderRepo: orderRepo,
+func NewCompleteOrderHandler(orders domain.OrderRepository, publisher ddd.EventPublisher[ddd.Event]) CompleteOrderHandler {
+	return CompleteOrderHandler{
+		orders:    orders,
 		publisher: publisher,
 	}
 }
 
-func (c CompleteOrderCommander) CompleteOrder(ctx context.Context, cmd CompleteOrder) error {
-	order, err := c.orderRepo.Load(ctx, cmd.ID)
+func (h CompleteOrderHandler) CompleteOrder(ctx context.Context, cmd CompleteOrder) error {
+	order, err := h.orders.Load(ctx, cmd.ID)
 	if err != nil {
 		return err
 	}
@@ -34,9 +34,10 @@ func (c CompleteOrderCommander) CompleteOrder(ctx context.Context, cmd CompleteO
 	if err != nil {
 		return nil
 	}
-	if err = c.orderRepo.Save(ctx, order); err != nil {
+
+	if err = h.orders.Save(ctx, order); err != nil {
 		return err
 	}
 
-	return c.publisher.Publish(ctx, event)
+	return h.publisher.Publish(ctx, event)
 }

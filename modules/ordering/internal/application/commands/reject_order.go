@@ -4,30 +4,27 @@ import (
 	"context"
 
 	"eda-in-golang/internal/ddd"
-	"eda-in-golang/modules/ordering/internal/domain/infra"
+	"eda-in-golang/modules/ordering/internal/domain"
 )
 
 type RejectOrder struct {
 	ID string
 }
 
-type RejectOrderCommander struct {
-	orderRepo infra.OrderRepository
+type RejectOrderHandler struct {
+	orders    domain.OrderRepository
 	publisher ddd.EventPublisher[ddd.Event]
 }
 
-func NewRejectOrderCommander(
-	orderRepo infra.OrderRepository,
-	publisher ddd.EventPublisher[ddd.Event],
-) RejectOrderCommander {
-	return RejectOrderCommander{
-		orderRepo: orderRepo,
+func NewRejectOrderHandler(orders domain.OrderRepository, publisher ddd.EventPublisher[ddd.Event]) RejectOrderHandler {
+	return RejectOrderHandler{
+		orders:    orders,
 		publisher: publisher,
 	}
 }
 
-func (c RejectOrderCommander) RejectOrder(ctx context.Context, cmd RejectOrder) error {
-	order, err := c.orderRepo.Load(ctx, cmd.ID)
+func (h RejectOrderHandler) RejectOrder(ctx context.Context, cmd RejectOrder) error {
+	order, err := h.orders.Load(ctx, cmd.ID)
 	if err != nil {
 		return err
 	}
@@ -37,9 +34,9 @@ func (c RejectOrderCommander) RejectOrder(ctx context.Context, cmd RejectOrder) 
 		return err
 	}
 
-	if err = c.orderRepo.Save(ctx, order); err != nil {
+	if err = h.orders.Save(ctx, order); err != nil {
 		return err
 	}
 
-	return c.publisher.Publish(ctx, event)
+	return h.publisher.Publish(ctx, event)
 }

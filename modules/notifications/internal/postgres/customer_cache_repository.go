@@ -13,23 +13,23 @@ import (
 	"eda-in-golang/modules/notifications/internal/models"
 )
 
-type customerCacheRepository struct {
+type CustomerCacheRepository struct {
 	tableName string
 	db        *sql.DB
 	fallback  application.CustomerRepository
 }
 
-var _ application.CustomerCacheRepository = (*customerCacheRepository)(nil)
+var _ application.CustomerCacheRepository = (*CustomerCacheRepository)(nil)
 
-func NewCustomerCacheRepository(tableName string, db *sql.DB, fallback application.CustomerRepository) customerCacheRepository {
-	return customerCacheRepository{
+func NewCustomerCacheRepository(tableName string, db *sql.DB, fallback application.CustomerRepository) CustomerCacheRepository {
+	return CustomerCacheRepository{
 		tableName: tableName,
 		db:        db,
 		fallback:  fallback,
 	}
 }
 
-func (r customerCacheRepository) Add(ctx context.Context, customerID, name, smsNumber string) error {
+func (r CustomerCacheRepository) Add(ctx context.Context, customerID, name, smsNumber string) error {
 	const query = "INSERT INTO %s (id, name, sms_number) VALUES ($1, $2, $3)"
 
 	_, err := r.db.ExecContext(ctx, r.table(query), customerID, name, smsNumber)
@@ -45,7 +45,7 @@ func (r customerCacheRepository) Add(ctx context.Context, customerID, name, smsN
 	return err
 }
 
-func (r customerCacheRepository) UpdateSmsNumber(ctx context.Context, customerID, smsNumber string) error {
+func (r CustomerCacheRepository) UpdateSmsNumber(ctx context.Context, customerID, smsNumber string) error {
 	const query = `UPDATE %s SET sms_number = $2 WHERE customerID = $1`
 
 	_, err := r.db.ExecContext(ctx, r.table(query), customerID, smsNumber)
@@ -53,7 +53,7 @@ func (r customerCacheRepository) UpdateSmsNumber(ctx context.Context, customerID
 	return err
 }
 
-func (r customerCacheRepository) Find(ctx context.Context, customerID string) (*models.Customer, error) {
+func (r CustomerCacheRepository) Find(ctx context.Context, customerID string) (*models.Customer, error) {
 	const query = `SELECT name, sms_number FROM %s WHERE id = $1 LIMIT 1`
 
 	customer := &models.Customer{
@@ -76,6 +76,6 @@ func (r customerCacheRepository) Find(ctx context.Context, customerID string) (*
 	return customer, nil
 }
 
-func (r customerCacheRepository) table(query string) string {
+func (r CustomerCacheRepository) table(query string) string {
 	return fmt.Sprintf(query, r.tableName)
 }

@@ -21,7 +21,6 @@ const (
 	ProductRemovedEvent        = "storesapi.ProductRemoved"
 )
 
-// RegisterMessages registers store and product events with the registry.
 func RegisterMessages(reg registry.Registry) error {
 	regtr := registrar.NewProtoRegistrar(reg)
 
@@ -55,18 +54,10 @@ func RegisterMessages(reg registry.Registry) error {
 	return nil
 }
 
-var (
-	_ registry.Registrable = (*StoreCreated)(nil)
-	_ registry.Registrable = (*StoreParticipationToggled)(nil)
-	_ registry.Registrable = (*StoreRebranded)(nil)
-	_ registry.Registrable = (*ProductAdded)(nil)
-	_ registry.Registrable = (*ProductRebranded)(nil)
-	_ registry.Registrable = (*ProductRemoved)(nil)
-)
-
 func (*StoreCreated) Key() string              { return StoreCreatedEvent }
 func (*StoreParticipationToggled) Key() string { return StoreParticipatingToggledEvent }
 func (*StoreRebranded) Key() string            { return StoreRebrandedEvent }
-func (*ProductAdded) Key() string              { return ProductAddedEvent }
-func (*ProductRebranded) Key() string          { return ProductRebrandedEvent }
-func (*ProductRemoved) Key() string            { return ProductRemovedEvent }
+
+func (*ProductAdded) Key() string     { return ProductAddedEvent }
+func (*ProductRebranded) Key() string { return ProductRebrandedEvent }
+func (*ProductRemoved) Key() string   { return ProductRemovedEvent }

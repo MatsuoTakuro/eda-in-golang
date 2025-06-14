@@ -1,7 +1,3 @@
-// Here is integration events defined for the Store Management module.
-// These are public, stable, and consumed by other modules.
-// Unlike domain events, they are decoupled from internal logic
-// and should not include gRPC request/response types.
 syntax = "proto3";
 
 package storespb;

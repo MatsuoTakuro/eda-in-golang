@@ -9,15 +9,13 @@ const (
 	InvoiceAggregateChannel = "mallbots.payments.events.Invoice"
 
 	InvoicePaidEvent = "paymentsapi.InvoicePaid"
-)
 
-const (
 	CommandChannel = "mallbots.payments.commands"
 
 	ConfirmPaymentCommand = "paymentsapi.ConfirmPayment"
 )
 
-func RegisterMessages(reg registry.Registry) (err error) {
+func Registrations(reg registry.Registry) (err error) {
 	regtr := registrar.NewProtoRegistrar(reg)
 
 	// Invoice events
@@ -32,11 +30,6 @@ func RegisterMessages(reg registry.Registry) (err error) {
 
 	return
 }
-
-var (
-	_ registry.Registrable = (*InvoicePaid)(nil)
-	_ registry.Registrable = (*ConfirmPayment)(nil)
-)
 
 func (*InvoicePaid) Key() string { return InvoicePaidEvent }
 
