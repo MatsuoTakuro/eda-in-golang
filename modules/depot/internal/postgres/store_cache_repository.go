@@ -5,22 +5,23 @@ import (
 	"database/sql"
 	"fmt"
 
+	"eda-in-golang/internal/postgres"
+	"eda-in-golang/modules/depot/internal/domain"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/stackus/errors"
-
-	"eda-in-golang/modules/depot/internal/domain"
 )
 
 type StoreCacheRepository struct {
 	tableName string
-	db        *sql.DB
+	db        postgres.DB
 	fallback  domain.StoreRepository
 }
 
 var _ domain.StoreCacheRepository = (*StoreCacheRepository)(nil)
 
-func NewStoreCacheRepository(tableName string, db *sql.DB, fallback domain.StoreRepository) StoreCacheRepository {
+func NewStoreCacheRepository(tableName string, db postgres.DB, fallback domain.StoreRepository) StoreCacheRepository {
 	return StoreCacheRepository{
 		tableName: tableName,
 		db:        db,

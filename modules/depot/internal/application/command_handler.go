@@ -17,7 +17,7 @@ type commandHandler struct {
 var _ ddd.CommandHandler[ddd.Command] = (*commandHandler)(nil)
 
 // NewCommandHandler creates a handler that handle commands mainly coming from other modules.
-func NewCommandHandler(app App) ddd.CommandHandler[ddd.Command] {
+func NewCommandHandler(app App) commandHandler {
 	return commandHandler{
 		app: app,
 	}
@@ -29,6 +29,8 @@ func (h commandHandler) HandleCommand(ctx context.Context, cmd ddd.Command) (ddd
 		return h.doCreateShoppingList(ctx, cmd)
 	case depotpb.CancelShoppingListCommand:
 		return h.doCancelShoppingList(ctx, cmd)
+	case depotpb.InitiateShoppingCommand:
+		return h.doInitiateShopping(ctx, cmd)
 	}
 
 	return nil, nil

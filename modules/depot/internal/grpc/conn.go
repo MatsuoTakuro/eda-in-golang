@@ -7,8 +7,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type ClientConn = grpc.ClientConn
+
 func Dial(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err error) {
-	conn, err = grpc.Dial(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err = grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return
 	}
@@ -16,6 +18,7 @@ func Dial(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err erro
 		if err != nil {
 			if err = conn.Close(); err != nil {
 				// TODO do something when logging is a thing
+				_ = err
 			}
 			return
 		}
@@ -23,6 +26,7 @@ func Dial(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err erro
 			<-ctx.Done()
 			if err = conn.Close(); err != nil {
 				// TODO do something when logging is a thing
+				_ = err
 			}
 		}()
 	}()
