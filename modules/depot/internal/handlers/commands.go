@@ -39,7 +39,7 @@ func SubscribeCommands(container di.Container) error {
 
 	subscriber := container.Get(di.Stream).(am.RawMessageStream)
 
-	return subscribeCommands(subscriber, am.MessageHandlerFunc[am.AckableRawMessage](cmdMsgHandler))
+	return subscribeCommands(subscriber, cmdMsgHandler)
 }
 
 func subscribeCommands(subscriber am.RawMessageSubscriber, handler am.RawMessageHandler) error {

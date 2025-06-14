@@ -39,7 +39,7 @@ func SubscribeIntegrationEvents(container di.Container) error {
 	subscriber := container.Get(di.Stream).(am.RawMessageStream)
 
 	err := subscriber.Subscribe(storespb.StoreAggregateChannel,
-		am.MessageHandlerFunc[am.AckableRawMessage](evtMsgHandler),
+		evtMsgHandler,
 		am.MessageFilter{
 			storespb.StoreCreatedEvent,
 			storespb.StoreRebrandedEvent,
@@ -51,7 +51,7 @@ func SubscribeIntegrationEvents(container di.Container) error {
 	}
 
 	err = subscriber.Subscribe(storespb.ProductAggregateChannel,
-		am.MessageHandlerFunc[am.AckableRawMessage](evtMsgHandler),
+		evtMsgHandler,
 		am.MessageFilter{
 			storespb.ProductAddedEvent,
 			storespb.ProductRebrandedEvent,
