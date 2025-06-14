@@ -39,7 +39,7 @@ func NewStream(
 	}
 }
 
-func (s *stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMessage) (err error) {
+func (s *stream) Publish(ctx context.Context, _ string, rawMsg am.RawMessage) (err error) {
 	var data []byte
 
 	data, err = proto.Marshal(&StreamMessage{
@@ -53,7 +53,7 @@ func (s *stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 
 	var p jetstream.PubAckFuture
 	p, err = s.js.PublishMsgAsync(&nats.Msg{
-		Subject: topicName,
+		Subject: rawMsg.Subject(),
 		Data:    data,
 	}, jetstream.WithMsgID(rawMsg.ID()))
 	if err != nil {
@@ -178,6 +178,7 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler
 		msg := &rawMessage{
 			id:       m.GetId(),
 			name:     m.GetName(),
+			subject:  natsMsg.Subject(),
 			data:     m.GetData(),
 			acked:    false,
 			ackFn:    func() error { return natsMsg.Ack() },

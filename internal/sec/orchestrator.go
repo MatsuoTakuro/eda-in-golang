@@ -20,7 +20,7 @@ type Orchestrator[T any] interface {
 
 type orchestrator[T any] struct {
 	saga      Saga[T]
-	repo      repository[T]
+	repo      Repository[T]
 	publisher am.CommandPublisher
 }
 
@@ -28,7 +28,7 @@ var _ Orchestrator[any] = (*orchestrator[any])(nil)
 
 func NewOrchestrator[T any](
 	saga Saga[T],
-	repo repository[T],
+	repo Repository[T],
 	publisher am.CommandPublisher,
 ) orchestrator[T] {
 	return orchestrator[T]{

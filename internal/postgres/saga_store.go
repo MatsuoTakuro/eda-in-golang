@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"eda-in-golang/internal/registry"
@@ -11,13 +10,13 @@ import (
 
 type sagaStore struct {
 	tableName string
-	db        *sql.DB
+	db        DB
 	registry  registry.Registry
 }
 
-var _ sec.Store = (*sagaStore)(nil)
+var _ sec.RawStore = (*sagaStore)(nil)
 
-func NewSagaStore(tableName string, db *sql.DB, registry registry.Registry) sagaStore {
+func NewSagaStore(tableName string, db DB, registry registry.Registry) sagaStore {
 	return sagaStore{
 		tableName: tableName,
 		db:        db,

@@ -59,9 +59,10 @@ func (s commandStream) Publish(ctx context.Context, topicName string, command dd
 	}
 
 	return s.stream.Publish(ctx, topicName, rawMessage{
-		id:   command.ID(),
-		name: command.CommandName(),
-		data: data,
+		id:      command.ID(),
+		name:    command.CommandName(),
+		subject: topicName,
+		data:    data,
 	})
 }
 
@@ -147,9 +148,10 @@ func (s commandStream) publishReply(ctx context.Context, destination string, rep
 	}
 
 	return s.stream.Publish(ctx, destination, rawMessage{
-		id:   reply.ID(),
-		name: reply.ReplyName(),
-		data: data,
+		id:      reply.ID(),
+		name:    reply.ReplyName(),
+		subject: destination,
+		data:    data,
 	})
 }
 

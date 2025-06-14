@@ -5,7 +5,6 @@ import (
 )
 
 type (
-	RawMessageHandlerFunc       func(ctx context.Context, msg AckableRawMessage) error
 	RawMessageHandlerMiddleware = func(handler RawMessageHandler) RawMessageHandler
 )
 
@@ -22,4 +21,10 @@ func RawMessageHandlerWithMiddleware(
 		h = mws[i](h)
 	}
 	return h
+}
+
+type RawMessageHandlerFunc func(ctx context.Context, msg AckableRawMessage) error
+
+func (f RawMessageHandlerFunc) HandleMessage(ctx context.Context, cmd AckableRawMessage) error {
+	return f(ctx, cmd)
 }

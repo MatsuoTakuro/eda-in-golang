@@ -27,4 +27,7 @@ const (
 	DomainEventHandler      Key = "domain_event_handler"
 	IntegrationEventHandler Key = "integration_event_handler"
 	CommandHandler          Key = "command_handler"
+	SagaRepo                Key = "saga_repository"
+	Saga                    Key = "saga"
+	Orchestrator            Key = "orchestrator"
 )

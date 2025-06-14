@@ -8,27 +8,27 @@ import (
 	"eda-in-golang/internal/registry"
 )
 
-type Repository interface {
-	Load(ctx context.Context, sagaName, sagaID string) (*Context[any], error)
-	Save(ctx context.Context, sagaName string, sagaCtx *Context[any]) error
+type Repository[T any] interface {
+	Load(ctx context.Context, sagaName, sagaID string) (*Context[T], error)
+	Save(ctx context.Context, sagaName string, sagaCtx *Context[T]) error
 }
 
 type repository[T any] struct {
-	reg   registry.Registry
-	store Store
+	reg  registry.Registry
+	repo RawStore
 }
 
-var _ Repository = (*repository[any])(nil)
+var _ Repository[any] = (*repository[any])(nil)
 
-func NewRepository[T any](reg registry.Registry, store Store) repository[T] {
+func NewRepository[T any](reg registry.Registry, store RawStore) repository[T] {
 	return repository[T]{
-		reg:   reg,
-		store: store,
+		reg:  reg,
+		repo: store,
 	}
 }
 
 func (r repository[T]) Load(ctx context.Context, sagaName, sagaID string) (*Context[T], error) {
-	byteCtx, err := r.store.Load(ctx, sagaName, sagaID)
+	byteCtx, err := r.repo.Load(ctx, sagaName, sagaID)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (r repository[T]) Save(ctx context.Context, sagaName string, sagaCtx *Conte
 		return err
 	}
 
-	return r.store.Save(ctx, sagaName, &Context[[]byte]{
+	return r.repo.Save(ctx, sagaName, &Context[[]byte]{
 		ID:             sagaCtx.ID,
 		Data:           data,
 		Step:           sagaCtx.Step,

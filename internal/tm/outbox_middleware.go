@@ -3,7 +3,7 @@ package tm
 import (
 	"context"
 
-	"github.com/stackus/errors"
+	"errors"
 
 	"eda-in-golang/internal/am"
 )
@@ -31,7 +31,7 @@ type outbox struct {
 
 var _ am.RawMessageStream = (*outbox)(nil)
 
-func (o outbox) Publish(ctx context.Context, topicName string, msg am.RawMessage) error {
+func (o outbox) Publish(ctx context.Context, _ string, msg am.RawMessage) error {
 	err := o.store.Save(ctx, msg)
 
 	var errDupe ErrDuplicateMessage

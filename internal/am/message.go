@@ -32,6 +32,8 @@ type MessageHandler[I AckableMessage] interface {
 
 // MessagePublisher is a publisher for messages.
 type MessagePublisher[T any] interface {
+	// Publish publishes a message to the specified topic or subject.
+	// While topicName is always accepted, an implementation may derive it from the message (e.g., subject) instead.
 	Publish(ctx context.Context, topicName string, v T) error
 }
 

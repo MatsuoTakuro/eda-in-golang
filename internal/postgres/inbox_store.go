@@ -26,6 +26,23 @@ func NewInboxStore(tableName string, db DB) inboxStore {
 }
 
 func (s inboxStore) Save(ctx context.Context, msg am.RawMessage) error {
+
+	if msg == nil {
+		return fmt.Errorf("inbox message cannot be nil")
+	}
+	if msg.ID() == "" {
+		return fmt.Errorf("inbox message id cannot be empty: %+v", msg)
+	}
+	if msg.Subject() == "" {
+		return fmt.Errorf("inbox message subject cannot be empty: %+v", msg)
+	}
+	if msg.MessageName() == "" {
+		return fmt.Errorf("inbox message name cannot be empty: %+v", msg)
+	}
+	if msg.Data() == nil {
+		return fmt.Errorf("inbox message data cannot be nil: %+v", msg)
+	}
+
 	const query = "INSERT INTO %s (id, name, subject, data, received_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)"
 
 	_, err := s.db.ExecContext(ctx, s.table(query), msg.ID(), msg.MessageName(), msg.Subject(), msg.Data())

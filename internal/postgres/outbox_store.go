@@ -3,12 +3,13 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgtype"
-	"github.com/stackus/errors"
+	serrors "github.com/stackus/errors"
 
 	"eda-in-golang/internal/am"
 	"eda-in-golang/internal/tm"
@@ -29,6 +30,23 @@ func NewOutboxStore(tableName string, db DB) outboxStore {
 }
 
 func (s outboxStore) Save(ctx context.Context, msg am.RawMessage) error {
+
+	if msg == nil {
+		return fmt.Errorf("outbox message cannot be nil")
+	}
+	if msg.ID() == "" {
+		return fmt.Errorf("outbox message id cannot be empty: %+v", msg)
+	}
+	if msg.Subject() == "" {
+		return fmt.Errorf("outbox message subject cannot be empty: %+v", msg)
+	}
+	if msg.MessageName() == "" {
+		return fmt.Errorf("outbox message name cannot be empty: %+v", msg)
+	}
+	if msg.Data() == nil {
+		return fmt.Errorf("outbox message data cannot be nil: %+v", msg)
+	}
+
 	const query = "INSERT INTO %s (id, name, subject, data) VALUES ($1, $2, $3, $4)"
 
 	_, err := s.db.ExecContext(ctx, s.table(query), msg.ID(), msg.MessageName(), msg.Subject(), msg.Data())
@@ -55,7 +73,7 @@ func (s outboxStore) FindUnpublished(ctx context.Context, limit int) ([]am.RawMe
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			err = errors.Wrap(err, "closing event rows")
+			err = serrors.Wrap(err, "closing event rows")
 		}
 	}(rows)
 
