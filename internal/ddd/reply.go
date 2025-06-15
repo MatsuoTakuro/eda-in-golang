@@ -1,15 +1,10 @@
 package ddd
 
 import (
-	"context"
 	"time"
 
 	"github.com/google/uuid"
 )
-
-type ReplyHandler[T Reply] interface {
-	HandleReply(ctx context.Context, reply T) error
-}
 
 type ReplyOption interface {
 	configureReply(*reply)
@@ -57,11 +52,3 @@ func (e reply) ReplyName() string     { return e.EntityName() }
 func (e reply) Payload() ReplyPayload { return e.payload }
 func (e reply) Metadata() Metadata    { return e.metadata }
 func (e reply) OccurredAt() time.Time { return e.occurredAt }
-
-type ReplyHandlerFunc[T Reply] func(ctx context.Context, reply T) error
-
-var _ ReplyHandler[Reply] = (*ReplyHandlerFunc[Reply])(nil)
-
-func (f ReplyHandlerFunc[T]) HandleReply(ctx context.Context, reply T) error {
-	return f(ctx, reply)
-}

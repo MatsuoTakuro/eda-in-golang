@@ -1,15 +1,10 @@
 package ddd
 
 import (
-	"context"
 	"time"
 
 	"github.com/google/uuid"
 )
-
-type CommandHandler[T Command] interface {
-	HandleCommand(ctx context.Context, cmd T) (Reply, error)
-}
 
 type CommandOption interface {
 	configureCommand(*command)
@@ -57,11 +52,3 @@ func (e command) CommandName() string     { return e.EntityName() }
 func (e command) Payload() CommandPayload { return e.payload }
 func (e command) Metadata() Metadata      { return e.metadata }
 func (e command) OccurredAt() time.Time   { return e.occurredAt }
-
-type CommandHandlerFunc[T Command] func(ctx context.Context, cmd T) (Reply, error)
-
-var _ CommandHandler[Command] = CommandHandlerFunc[Command](nil)
-
-func (f CommandHandlerFunc[T]) HandleCommand(ctx context.Context, cmd T) (Reply, error) {
-	return f(ctx, cmd)
-}

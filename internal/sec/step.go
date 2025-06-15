@@ -16,8 +16,8 @@ type Step[T any] interface {
 	OnNormalReply(replyName string, fn StepReplyHandlerFunc[T]) Step[T]
 	// OnCompensationReply registers a reply handler for the compensating action.
 	OnCompensationReply(replyName string, fn StepReplyHandlerFunc[T]) Step[T]
-	// isInvocable checks if the step has an action registered for the given isCompensating state.
-	isInvocable(isCompensating isCompensating) bool
+	// hasActionFor checks if the step has an action registered for the given isCompensating state.
+	hasActionFor(isCompensating isCompensating) bool
 	// executeAction executes the action for the step based on the isCompensating state.
 	executeAction(ctx context.Context, sagaCtx *Context[T]) stepResult[T]
 	// handleReply handles the reply for the step based on the isCompensating state.
@@ -75,7 +75,7 @@ func (s *step[T]) OnCompensationReply(replyName string, replyHandler StepReplyHa
 	return s
 }
 
-func (s step[T]) isInvocable(isCompensating isCompensating) bool {
+func (s step[T]) hasActionFor(isCompensating isCompensating) bool {
 	return s.actions[isCompensating] != nil
 }
 

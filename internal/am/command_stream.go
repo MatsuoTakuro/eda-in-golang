@@ -36,6 +36,7 @@ func NewCommandStream(reg registry.Registry, stream RawMessageStream) commandStr
 	}
 }
 
+// Publish publishes a command message to the specified topic.
 func (s commandStream) Publish(ctx context.Context, topicName string, command ddd.Command) error {
 	metadata, err := structpb.NewStruct(command.Metadata())
 	if err != nil {
@@ -66,6 +67,7 @@ func (s commandStream) Publish(ctx context.Context, topicName string, command dd
 	})
 }
 
+// Subscribe subscribes to a topic for command messages and handles them using the provided handler.
 func (s commandStream) Subscribe(topicName string, handler CommandMessageHandler, options ...SubscriberOption) error {
 	cfg := NewSubscriberConfig(options)
 
@@ -107,21 +109,22 @@ func (s commandStream) Subscribe(topicName string, handler CommandMessageHandler
 			msg:        msg,
 		}
 
-		destination := commandMsg.Metadata().Get(CommandReplyChannelHdr).(string)
+		replyChannel := commandMsg.Metadata().Get(CommandReplyChannelHdr).(string)
 
 		var reply ddd.Reply
 		reply, err = handler.HandleMessage(ctx, commandMsg)
 		if err != nil {
-			return s.publishReply(ctx, destination, s.failure(reply, commandMsg))
+			return s.publishReply(ctx, replyChannel, s.failure(reply, commandMsg))
 		}
 
-		return s.publishReply(ctx, destination, s.success(reply, commandMsg))
+		return s.publishReply(ctx, replyChannel, s.success(reply, commandMsg))
 	})
 
 	return s.stream.Subscribe(topicName, fn, options...)
 }
 
-func (s commandStream) publishReply(ctx context.Context, destination string, reply ddd.Reply) error {
+// publishReply publishes a reply message to the specified reply channel.
+func (s commandStream) publishReply(ctx context.Context, replyChannel string, reply ddd.Reply) error {
 	metadata, err := structpb.NewStruct(reply.Metadata())
 	if err != nil {
 		return err
@@ -147,14 +150,15 @@ func (s commandStream) publishReply(ctx context.Context, destination string, rep
 		return err
 	}
 
-	return s.stream.Publish(ctx, destination, rawMessage{
+	return s.stream.Publish(ctx, replyChannel, rawMessage{
 		id:      reply.ID(),
 		name:    reply.ReplyName(),
-		subject: destination,
+		subject: replyChannel,
 		data:    data,
 	})
 }
 
+// failure creates a failure reply.
 func (s commandStream) failure(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
 	if reply == nil {
 		reply = ddd.NewReply(FailureReply, nil)
@@ -165,6 +169,7 @@ func (s commandStream) failure(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
 	return s.applyCorrelationHeaders(reply, cmd)
 }
 
+// success creates a success reply.
 func (s commandStream) success(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
 	if reply == nil {
 		reply = ddd.NewReply(SuccessReply, nil)

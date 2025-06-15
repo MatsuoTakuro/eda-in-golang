@@ -75,6 +75,7 @@ func (s *stream) Publish(ctx context.Context, _ string, rawMsg am.RawMessage) (e
 				}
 				logEvt.
 					Any(moduleField, s.module).
+					Any(subjectField, rawMsg.Subject()).
 					Any(msgNameField, rawMsg.MessageName()).
 					Any(msgIDField, rawMsg.ID()).
 					Msg("acked publishing message")
@@ -86,6 +87,7 @@ func (s *stream) Publish(ctx context.Context, _ string, rawMsg am.RawMessage) (e
 					// TODO do more than give up
 					s.logger.Error().
 						Any(moduleField, s.module).
+						Any(subjectField, rawMsg.Subject()).
 						Any(msgNameField, rawMsg.MessageName()).
 						Any(msgIDField, rawMsg.ID()).
 						Err(err).
@@ -97,6 +99,7 @@ func (s *stream) Publish(ctx context.Context, _ string, rawMsg am.RawMessage) (e
 					// TODO do more than give up
 					s.logger.Error().
 						Any(moduleField, s.module).
+						Any(subjectField, rawMsg.Subject()).
 						Any(msgNameField, rawMsg.MessageName()).
 						Any(msgIDField, rawMsg.ID()).
 						Err(err).
@@ -201,6 +204,7 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler
 				// TODO logging?
 				s.logger.Error().
 					Any(moduleField, s.module).
+					Any(subjectField, msg.Subject()).
 					Any(msgNameField, msg.MessageName()).
 					Any(msgIDField, msg.ID()).
 					Err(err).
@@ -215,6 +219,7 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler
 		case <-wCtx.Done():
 			s.logger.Error().
 				Any(moduleField, s.module).
+				Any(subjectField, msg.Subject()).
 				Any(msgNameField, msg.MessageName()).
 				Any(msgIDField, msg.ID()).
 				Err(wCtx.Err()).
@@ -238,6 +243,7 @@ func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 		if ackErr := msg.Ack(); ackErr != nil {
 			s.logger.Error().
 				Any(moduleField, s.module).
+				Any(subjectField, msg.Subject()).
 				Any(msgNameField, msg.MessageName()).
 				Any(msgIDField, msg.ID()).
 				Err(ackErr).
@@ -252,6 +258,7 @@ func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 		}
 		logEvt.
 			Any(moduleField, s.module).
+			Any(subjectField, msg.Subject()).
 			Any(msgNameField, msg.MessageName()).
 			Any(msgIDField, msg.ID()).
 			Msg("acked received message")
@@ -261,6 +268,7 @@ func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 		if ackErr := msg.Ack(); ackErr != nil {
 			s.logger.Error().
 				Any(moduleField, s.module).
+				Any(subjectField, msg.Subject()).
 				Any(msgNameField, msg.MessageName()).
 				Any(msgIDField, msg.ID()).
 				Err(ackErr).
@@ -269,6 +277,7 @@ func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 		}
 		s.logger.Info().
 			Any(moduleField, s.module).
+			Any(subjectField, msg.Subject()).
 			Any(msgNameField, msg.MessageName()).
 			Any(msgIDField, msg.ID()).
 			Msg("skipped handling received message")
@@ -279,6 +288,7 @@ func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 			err = errors.Join(err, nakErr)
 			s.logger.Error().
 				Any(moduleField, s.module).
+				Any(subjectField, msg.Subject()).
 				Any(msgNameField, msg.MessageName()).
 				Any(msgIDField, msg.ID()).
 				Err(err).
@@ -287,6 +297,7 @@ func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 		}
 		s.logger.Error().
 			Any(moduleField, s.module).
+			Any(subjectField, msg.Subject()).
 			Any(msgNameField, msg.MessageName()).
 			Any(msgIDField, msg.ID()).
 			Err(err).
@@ -296,7 +307,8 @@ func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 }
 
 const (
-	moduleField  = "module"
-	msgNameField = "msg_name"
-	msgIDField   = "msg_id"
+	moduleField  = "mod"
+	subjectField = "sub"
+	msgNameField = "name"
+	msgIDField   = "id"
 )

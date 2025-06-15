@@ -101,17 +101,29 @@ func (s eventStore) Save(ctx context.Context, aggregate es.EventSourcedAggregate
 		}
 
 		placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)",
-			i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7,
+			i*7+1, // stream_id
+			i*7+2, // stream_name
+			i*7+3, // stream_version
+			i*7+4, // event_id
+			i*7+5, // event_name
+			i*7+6, // event_data
+			i*7+7, // occurred_at
 		)
 
 		values[i*7] = aggregateID
-		values[i*1+1] = aggregateName
+		values[i*7+1] = aggregateName
 		values[i*7+2] = event.AggregateVersion()
 		values[i*7+3] = event.ID()
 		values[i*7+4] = event.EventName()
 		values[i*7+5] = payloadData
 		values[i*7+6] = event.OccurredAt()
 	}
+	// Here is an example query;
+	// INSERT INTO ordering.events
+	//   (stream_id, stream_name, stream_version, event_id, event_name, event_data, occurred_at)
+	// VALUES
+	//   ($1, $2, $3, $4, $5, $6, $7),
+	//   ($8, $9, $10, $11, $12, $13, $14);
 	if _, err = s.db.ExecContext(
 		ctx,
 		fmt.Sprintf("%s %s", s.table(query), strings.Join(placeholders, ",")),

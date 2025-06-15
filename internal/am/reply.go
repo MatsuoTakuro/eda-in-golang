@@ -1,8 +1,8 @@
 package am
 
 const (
-	FailureReply = "am.Failure"
-	SuccessReply = "am.Success"
+	FailureReply = "reply.Failure"
+	SuccessReply = "reply.Success"
 
 	OutcomeSuccess = "SUCCESS"
 	OutcomeFailure = "FAILURE"

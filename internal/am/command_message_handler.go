@@ -29,6 +29,8 @@ func NewCommandMessageHandler(
 	}
 }
 
+// HandleMessage converts the raw message into a command message,
+// deserializes the payload, and invokes the command handler.
 func (h commandMsgHandler) HandleMessage(ctx context.Context, msg AckableRawMessage) error {
 	var commandData CommandMessageData
 
@@ -53,18 +55,18 @@ func (h commandMsgHandler) HandleMessage(ctx context.Context, msg AckableRawMess
 		msg:        msg,
 	}
 
-	destination := commandMsg.Metadata().Get(CommandReplyChannelHdr).(string)
+	replyChannel := commandMsg.Metadata().Get(CommandReplyChannelHdr).(string)
 
 	reply, err := h.handler.HandleCommand(ctx, commandMsg)
 	if err != nil {
-		return h.publishReply(ctx, destination, h.failure(reply, commandMsg))
+		return h.publishReply(ctx, replyChannel, h.failure(reply, commandMsg))
 	}
 
-	return h.publishReply(ctx, destination, h.success(reply, commandMsg))
+	return h.publishReply(ctx, replyChannel, h.success(reply, commandMsg))
 }
 
-func (h commandMsgHandler) publishReply(ctx context.Context, destination string, reply ddd.Reply) error {
-	return h.publisher.Publish(ctx, destination, reply)
+func (h commandMsgHandler) publishReply(ctx context.Context, replyChannel string, reply ddd.Reply) error {
+	return h.publisher.Publish(ctx, replyChannel, reply)
 }
 
 func (h commandMsgHandler) failure(reply ddd.Reply, cmd ddd.Command) ddd.Reply {

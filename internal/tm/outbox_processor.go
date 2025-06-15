@@ -46,6 +46,7 @@ const (
 )
 
 func (p outboxProcessor) processMessages(ctx context.Context) error {
+	// set up 0 duration timer to poll immediately for first batch
 	timer := time.NewTimer(0)
 	for {
 		msgs, err := p.store.FindUnpublished(ctx, messageLimit)
@@ -71,10 +72,12 @@ func (p outboxProcessor) processMessages(ctx context.Context) error {
 			continue
 		}
 
+		// if no messages found, stop the timer if it's running
 		if !timer.Stop() {
 			select {
-			case <-timer.C:
+			case <-timer.C: // drain the channel if it was already running
 			default:
+				// do nothing, channel is empty
 			}
 		}
 
@@ -82,8 +85,10 @@ func (p outboxProcessor) processMessages(ctx context.Context) error {
 		timer.Reset(pollingInterval)
 
 		select {
+		// check if the context is done to exit gracefully
 		case <-ctx.Done():
 			return nil
+		// wait for the reset timer to expire before polling again
 		case <-timer.C:
 		}
 	}

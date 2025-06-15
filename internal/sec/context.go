@@ -26,6 +26,6 @@ func (s *Context[T]) complete() {
 	s.Done = true
 }
 
-func (s *Context[T]) compensate() {
+func (s *Context[T]) markAsCompensating() {
 	s.IsCompensating = true
 }

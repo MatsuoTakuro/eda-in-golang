@@ -15,7 +15,7 @@ type Orchestrator[T any] interface {
 	// ReplyTopic returns the topic on which this orchestrator listens for replies.
 	ReplyTopic() string
 	// HandleReply processes a reply message and determines the next Saga step.
-	HandleReply(ctx context.Context, reply ddd.Reply) error
+	ddd.ReplyHandler[ddd.Reply]
 }
 
 type orchestrator[T any] struct {
@@ -52,7 +52,7 @@ func (o orchestrator[T]) Start(ctx context.Context, id string, data T) error {
 		return err
 	}
 
-	result := o.execute(ctx, sagaCtx)
+	result := o.findAndExecuteNextStep(ctx, sagaCtx)
 	if result.err != nil {
 		return err
 	}
@@ -101,18 +101,18 @@ func (o orchestrator[T]) handleReply(ctx context.Context, sagaCtx *Context[T], r
 	}
 
 	if isSuccessful {
-		return o.execute(ctx, sagaCtx), nil
+		return o.findAndExecuteNextStep(ctx, sagaCtx), nil
 	}
 
 	if sagaCtx.IsCompensating {
 		return stepResult[T]{}, errors.ErrInternal.Msg("received failed reply but already compensating")
 	}
 
-	sagaCtx.compensate()
-	return o.execute(ctx, sagaCtx), nil
+	sagaCtx.markAsCompensating()
+	return o.findAndExecuteNextStep(ctx, sagaCtx), nil
 }
 
-func (o orchestrator[T]) execute(ctx context.Context, sagaCtx *Context[T]) stepResult[T] {
+func (o orchestrator[T]) findAndExecuteNextStep(ctx context.Context, sagaCtx *Context[T]) stepResult[T] {
 
 	var direction = 1 // forward direction for normal steps
 	if sagaCtx.IsCompensating {
@@ -122,28 +122,28 @@ func (o orchestrator[T]) execute(ctx context.Context, sagaCtx *Context[T]) stepR
 	steps := o.saga.getSteps()
 	stepCap := len(steps)
 
-	var next Step[T]
+	var nextStep Step[T]
 	// delta tracks how many steps to move from current position to the next invocable step
 	// whether moving forward or backward.
 	var delta = 1
 	for i := sagaCtx.Step + direction;  // start from the next step
 	noStepsExecuted < i && i < stepCap; // ensure we stay within bounds
 	i += direction {                    // increment by direction
-		next = steps[i]
-		if next != nil && next.isInvocable(sagaCtx.IsCompensating) {
+		nextStep = steps[i]
+		if nextStep != nil && nextStep.hasActionFor(sagaCtx.IsCompensating) {
 			break
 		}
 		delta += 1 // track the number of steps moved (forward or backward)
 	}
 
-	if next == nil {
+	if nextStep == nil {
 		sagaCtx.complete()
 		return stepResult[T]{ctx: sagaCtx}
 	}
 
 	sagaCtx.advance(delta)
 
-	return next.executeAction(ctx, sagaCtx)
+	return nextStep.executeAction(ctx, sagaCtx)
 }
 
 func (o orchestrator[T]) processResult(ctx context.Context, result stepResult[T]) (err error) {
