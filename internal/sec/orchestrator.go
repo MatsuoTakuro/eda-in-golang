@@ -108,7 +108,7 @@ func (o orchestrator[T]) handleReply(ctx context.Context, sagaCtx *Context[T], r
 		return stepResult[T]{}, errors.ErrInternal.Msg("received failed reply but already compensating")
 	}
 
-	sagaCtx.markAsCompensating()
+	sagaCtx.beginCompensation()
 	return o.findAndExecuteNextStep(ctx, sagaCtx), nil
 }
 

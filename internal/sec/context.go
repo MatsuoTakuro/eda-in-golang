@@ -26,6 +26,6 @@ func (s *Context[T]) complete() {
 	s.Done = true
 }
 
-func (s *Context[T]) markAsCompensating() {
+func (s *Context[T]) beginCompensation() {
 	s.IsCompensating = true
 }
