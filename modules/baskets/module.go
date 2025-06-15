@@ -19,6 +19,7 @@ import (
 	"eda-in-golang/modules/baskets/basketspb"
 	"eda-in-golang/modules/baskets/internal/application"
 	"eda-in-golang/modules/baskets/internal/domain"
+	evtstm "eda-in-golang/modules/baskets/internal/es"
 	"eda-in-golang/modules/baskets/internal/grpc"
 	"eda-in-golang/modules/baskets/internal/handlers"
 	"eda-in-golang/modules/baskets/internal/logging"
@@ -96,8 +97,7 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 		), nil
 	})
 	container.AddScoped("baskets", func(c di.Container) (any, error) {
-		return es.NewAggregateRepository[*domain.Basket](
-			domain.BasketAggregate,
+		return evtstm.NewBasketRepository[*domain.Basket](
 			c.Get("registry").(registry.Registry),
 			c.Get("aggregateStore").(es.AggregateStore),
 		), nil
@@ -169,6 +169,7 @@ func registrations(reg registry.Registry) error {
 	// Basket
 	if err := regtr.Register(domain.Basket{}, func(v interface{}) error {
 		basket := v.(*domain.Basket)
+		basket.Aggregate = es.NewAggregate("", domain.BasketAggregate)
 		basket.Items = make(map[string]domain.Item)
 		return nil
 	}); err != nil {

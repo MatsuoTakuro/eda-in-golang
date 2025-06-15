@@ -28,13 +28,15 @@ message Item {
 }
 
 message CreateOrderRequest {
-  repeated Item items = 1;
-  string customer_id = 2;
-  string payment_id = 3;
+  string idempotency_key = 1;
+  repeated Item items = 2;
+  string customer_id = 3;
+  string payment_id = 4;
 }
 
 message CreateOrderResponse {
   string id = 1;
+  bool accepted = 2; // true if the order was already created due to idempotency
 }
 
 message GetOrderRequest {

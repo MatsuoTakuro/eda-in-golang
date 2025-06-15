@@ -15,7 +15,8 @@ type (
 		Queries
 	}
 	Commands interface {
-		CreateOrder(ctx context.Context, cmd commands.CreateOrder) error
+		CreateOrder(ctx context.Context, cmd commands.CreateOrder) (
+			orderID string, isAlreadyAccepted bool, err error)
 		RejectOrder(ctx context.Context, cmd commands.RejectOrder) error
 		ApproveOrder(ctx context.Context, cmd commands.ApproveOrder) error
 		CancelOrder(ctx context.Context, cmd commands.CancelOrder) error
@@ -45,10 +46,12 @@ type (
 
 var _ App = (*Application)(nil)
 
-func New(orders domain.OrderRepository, publisher ddd.EventPublisher[ddd.Event]) *Application {
+func New(orders domain.OrderRepository,
+	orderRequests domain.OrderRequestRepository,
+	publisher ddd.EventPublisher[ddd.Event]) *Application {
 	return &Application{
 		appCommands: appCommands{
-			CreateOrderHandler:   commands.NewCreateOrderHandler(orders, publisher),
+			CreateOrderHandler:   commands.NewCreateOrderHandler(orders, orderRequests, publisher),
 			RejectOrderHandler:   commands.NewRejectOrderHandler(orders, publisher),
 			ApproveOrderHandler:  commands.NewApproveOrderHandler(orders, publisher),
 			CancelOrderHandler:   commands.NewCancelOrderHandler(orders, publisher),

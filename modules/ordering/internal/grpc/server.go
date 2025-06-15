@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"google.golang.org/grpc"
 
 	"eda-in-golang/modules/ordering/internal/application"
@@ -26,21 +25,23 @@ func RegisterServer(app application.App, registrar grpc.ServiceRegistrar) error 
 }
 
 func (s server) CreateOrder(ctx context.Context, request *orderingpb.CreateOrderRequest) (*orderingpb.CreateOrderResponse, error) {
-	id := uuid.New().String()
 
 	items := make([]domain.Item, len(request.Items))
 	for i, item := range request.Items {
 		items[i] = s.itemToDomain(item)
 	}
 
-	err := s.app.CreateOrder(ctx, commands.CreateOrder{
-		ID:         id,
-		CustomerID: request.GetCustomerId(),
-		PaymentID:  request.GetPaymentId(),
-		Items:      items,
+	orderID, isAccepted, err := s.app.CreateOrder(ctx, commands.CreateOrder{
+		IdempotencyKey: request.GetIdempotencyKey(),
+		CustomerID:     request.GetCustomerId(),
+		PaymentID:      request.GetPaymentId(),
+		Items:          items,
 	})
 
-	return &orderingpb.CreateOrderResponse{Id: id}, err
+	return &orderingpb.CreateOrderResponse{
+		Id:       orderID,
+		Accepted: isAccepted,
+	}, err
 }
 
 func (s server) CancelOrder(ctx context.Context, request *orderingpb.CancelOrderRequest) (*orderingpb.CancelOrderResponse, error) {

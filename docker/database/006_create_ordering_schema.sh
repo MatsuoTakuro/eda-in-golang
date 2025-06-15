@@ -4,6 +4,14 @@ set -e
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "mallbots" <<-EOSQL
   CREATE SCHEMA ordering;
 
+  CREATE TABLE ordering.order_requests (
+    id                text PRIMARY KEY,         -- order ID (= stream ID)
+    idempotency_key   text UNIQUE NOT NULL,     -- for request deduplication
+    type              text NOT NULL,            -- e.g., "create_order"
+    command_payload   jsonb NOT NULL,           -- marshaled JSON command object
+    created_at        timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE ordering.orders
   (
     id          text NOT NULL,

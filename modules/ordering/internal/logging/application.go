@@ -25,7 +25,7 @@ func LogApplicationAccess(application application.App, logger zerolog.Logger) Ap
 	}
 }
 
-func (a Application) CreateOrder(ctx context.Context, cmd commands.CreateOrder) (err error) {
+func (a Application) CreateOrder(ctx context.Context, cmd commands.CreateOrder) (orderID string, isAlreadyAccepted bool, err error) {
 	a.logger.Info().Msg("--> Ordering.CreateOrder")
 	defer func() { a.logger.Info().Err(err).Msg("<-- Ordering.CreateOrder") }()
 	return a.App.CreateOrder(ctx, cmd)

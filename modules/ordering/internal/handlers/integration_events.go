@@ -10,6 +10,8 @@ import (
 	"eda-in-golang/modules/ordering/internal/application"
 	"eda-in-golang/modules/ordering/internal/application/commands"
 	"eda-in-golang/modules/ordering/internal/domain"
+
+	"github.com/google/uuid"
 )
 
 type integrationHandlers[T ddd.Event] struct {
@@ -69,12 +71,18 @@ func (h integrationHandlers[T]) onBasketCheckedOut(ctx context.Context, event dd
 		}
 	}
 
-	return h.app.CreateOrder(ctx, commands.CreateOrder{
-		ID:         payload.GetId(),
-		CustomerID: payload.GetCustomerId(),
-		PaymentID:  payload.GetPaymentId(),
-		Items:      items,
+	_, _, err := h.app.CreateOrder(ctx, commands.CreateOrder{
+		IdempotencyKey: uuid.New().String(), // auto-generated for integration events
+		ID:             payload.GetId(),
+		CustomerID:     payload.GetCustomerId(),
+		PaymentID:      payload.GetPaymentId(),
+		Items:          items,
 	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (h integrationHandlers[T]) onShoppingListCompleted(ctx context.Context, event ddd.Event) error {

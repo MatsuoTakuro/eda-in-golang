@@ -10,38 +10,77 @@ import (
 )
 
 type CreateOrder struct {
-	ID         string
-	CustomerID string
-	PaymentID  string
-	Items      []domain.Item
+	IdempotencyKey string        `json:"idempotency_key"`
+	ID             string        `json:"id"`
+	CustomerID     string        `json:"customer_id"`
+	PaymentID      string        `json:"payment_id"`
+	Items          []domain.Item `json:"items"`
 }
 
 type CreateOrderHandler struct {
-	orders    domain.OrderRepository
+	events    domain.OrderRepository
+	requests  domain.OrderRequestRepository
 	publisher ddd.EventPublisher[ddd.Event]
 }
 
-func NewCreateOrderHandler(orders domain.OrderRepository, publisher ddd.EventPublisher[ddd.Event]) CreateOrderHandler {
+func NewCreateOrderHandler(
+	orders domain.OrderRepository,
+	orderRequests domain.OrderRequestRepository,
+	publisher ddd.EventPublisher[ddd.Event],
+) CreateOrderHandler {
 	return CreateOrderHandler{
-		orders:    orders,
+		events:    orders,
+		requests:  orderRequests,
 		publisher: publisher,
 	}
 }
 
-func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) error {
-	order, err := h.orders.Load(ctx, cmd.ID)
+func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) (
+	id string, isAlreadyAccepted bool, err error,
+) {
+
+	if cmd.IdempotencyKey == "" {
+		return "", false, errors.Wrap(errors.ErrBadRequest, "idempotency key is required")
+	}
+
+	id, inserted, err := h.requests.FindOrInsert(ctx,
+		cmd.IdempotencyKey,
+		domain.CreateOrderRequest,
+		cmd,
+	)
+	isAlreadyAccepted = !inserted
 	if err != nil {
-		return err
+		return "", isAlreadyAccepted, err
+	}
+	if !inserted {
+		// If the order request already exists, we can return the existing order ID.
+		order, err := h.events.Load(ctx, id)
+		if err != nil {
+			return "", isAlreadyAccepted, err
+		}
+		if order.ID() == "" {
+			return "", isAlreadyAccepted, errors.Wrap(errors.ErrInternal, "order not found")
+		}
+		if order.ID() != id {
+			return "", isAlreadyAccepted, errors.Wrapf(errors.ErrInternal, "order id mismatch: expected %s, got %s", id, order.ID())
+		}
+
+		return order.ID(), isAlreadyAccepted, nil
 	}
 
-	event, err := order.CreateOrder(cmd.ID, cmd.CustomerID, cmd.PaymentID, cmd.Items)
+	order, err := h.events.Load(ctx, id)
 	if err != nil {
-		return errors.Wrap(err, "create order command")
+		return "", isAlreadyAccepted, err
 	}
 
-	if err = h.orders.Save(ctx, order); err != nil {
-		return errors.Wrap(err, "order creation")
+	event, err := order.CreateOrder(id, cmd.CustomerID, cmd.PaymentID, cmd.Items)
+	if err != nil {
+		return "", isAlreadyAccepted, errors.Wrap(err, "create order command")
 	}
 
-	return h.publisher.Publish(ctx, event)
+	if err = h.events.Save(ctx, order); err != nil {
+		return "", isAlreadyAccepted, errors.Wrap(err, "order creation")
+	}
+
+	return id, isAlreadyAccepted, h.publisher.Publish(ctx, event)
 }

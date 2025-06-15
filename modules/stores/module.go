@@ -10,6 +10,8 @@ import (
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/di"
 	"eda-in-golang/internal/es"
+	evtstm "eda-in-golang/modules/stores/internal/es"
+
 	"eda-in-golang/internal/jetstream"
 	"eda-in-golang/internal/monolith"
 	pg "eda-in-golang/internal/postgres"
@@ -86,15 +88,13 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 		), nil
 	})
 	container.AddScoped("stores", func(c di.Container) (any, error) {
-		return es.NewAggregateRepository[*domain.Store](
-			domain.StoreAggregate,
+		return evtstm.NewStoreRepository[*domain.Store](
 			c.Get("registry").(registry.Registry),
 			c.Get("aggregateStore").(es.AggregateStore),
 		), nil
 	})
 	container.AddScoped("products", func(c di.Container) (any, error) {
-		return es.NewAggregateRepository[*domain.Product](
-			domain.ProductAggregate,
+		return evtstm.NewProductRepository[*domain.Product](
 			c.Get("registry").(registry.Registry),
 			c.Get("aggregateStore").(es.AggregateStore),
 		), nil

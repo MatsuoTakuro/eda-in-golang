@@ -20,9 +20,11 @@ import (
 	"eda-in-golang/modules/depot/depotpb"
 	"eda-in-golang/modules/ordering/internal/application"
 	"eda-in-golang/modules/ordering/internal/domain"
+	evtstm "eda-in-golang/modules/ordering/internal/es"
 	"eda-in-golang/modules/ordering/internal/grpc"
 	"eda-in-golang/modules/ordering/internal/handlers"
 	"eda-in-golang/modules/ordering/internal/logging"
+	"eda-in-golang/modules/ordering/internal/postgres"
 	"eda-in-golang/modules/ordering/internal/rest"
 	"eda-in-golang/modules/ordering/orderingpb"
 )
@@ -101,11 +103,14 @@ func (Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 		), nil
 	})
 	container.AddScoped("orders", func(c di.Container) (any, error) {
-		return es.NewAggregateRepository[*domain.Order](
-			domain.OrderAggregate,
+		return evtstm.NewOrderRepository[*domain.Order](
 			c.Get("registry").(registry.Registry),
 			c.Get("aggregateStore").(es.AggregateStore),
 		), nil
+	})
+	container.AddScoped("orderRequests", func(c di.Container) (any, error) {
+		tx := c.Get("tx").(*sql.Tx)
+		return postgres.NewOrderRequestRepository("ordering.order_requests", tx), nil
 	})
 
 	// setup application
@@ -113,6 +118,7 @@ func (Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 		return logging.LogApplicationAccess(
 			application.New(
 				c.Get("orders").(domain.OrderRepository),
+				c.Get("orderRequests").(domain.OrderRequestRepository),
 				c.Get("domainDispatcher").(ddd.EventDispatcher[ddd.Event]),
 			),
 			c.Get("logger").(zerolog.Logger),
