@@ -36,7 +36,7 @@ func NewCreateOrderHandler(
 }
 
 func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) (
-	id string, isAlreadyAccepted bool, err error,
+	id string, alreadyAccepted bool, err error,
 ) {
 
 	if cmd.IdempotencyKey == "" {
@@ -48,39 +48,39 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) (
 		domain.CreateOrderRequest,
 		cmd,
 	)
-	isAlreadyAccepted = !inserted
+	alreadyAccepted = !inserted
 	if err != nil {
-		return "", isAlreadyAccepted, err
+		return "", alreadyAccepted, err
 	}
 	if !inserted {
 		// If the order request already exists, we can return the existing order ID.
 		order, err := h.events.Load(ctx, id)
 		if err != nil {
-			return "", isAlreadyAccepted, err
+			return "", alreadyAccepted, err
 		}
 		if order.ID() == "" {
-			return "", isAlreadyAccepted, errors.Wrap(errors.ErrInternal, "order not found")
+			return "", alreadyAccepted, errors.Wrap(errors.ErrInternal, "order not found")
 		}
 		if order.ID() != id {
-			return "", isAlreadyAccepted, errors.Wrapf(errors.ErrInternal, "order id mismatch: expected %s, got %s", id, order.ID())
+			return "", alreadyAccepted, errors.Wrapf(errors.ErrInternal, "order id mismatch: expected %s, got %s", id, order.ID())
 		}
 
-		return order.ID(), isAlreadyAccepted, nil
+		return order.ID(), alreadyAccepted, nil
 	}
 
 	order, err := h.events.Load(ctx, id)
 	if err != nil {
-		return "", isAlreadyAccepted, err
+		return "", alreadyAccepted, err
 	}
 
 	event, err := order.CreateOrder(id, cmd.CustomerID, cmd.PaymentID, cmd.Items)
 	if err != nil {
-		return "", isAlreadyAccepted, errors.Wrap(err, "create order command")
+		return "", alreadyAccepted, errors.Wrap(err, "create order command")
 	}
 
 	if err = h.events.Save(ctx, order); err != nil {
-		return "", isAlreadyAccepted, errors.Wrap(err, "order creation")
+		return "", alreadyAccepted, errors.Wrap(err, "order creation")
 	}
 
-	return id, isAlreadyAccepted, h.publisher.Publish(ctx, event)
+	return id, alreadyAccepted, h.publisher.Publish(ctx, event)
 }

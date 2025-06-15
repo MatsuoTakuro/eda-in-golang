@@ -16,7 +16,7 @@ type (
 	}
 	Commands interface {
 		CreateOrder(ctx context.Context, cmd commands.CreateOrder) (
-			orderID string, isAlreadyAccepted bool, err error)
+			orderID string, alreadyAccepted bool, err error)
 		RejectOrder(ctx context.Context, cmd commands.RejectOrder) error
 		ApproveOrder(ctx context.Context, cmd commands.ApproveOrder) error
 		CancelOrder(ctx context.Context, cmd commands.CancelOrder) error
