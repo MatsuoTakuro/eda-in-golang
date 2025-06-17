@@ -45,13 +45,13 @@ func (_m *MockEntity) ID() string {
 	return r0
 }
 
-// setID provides a mock function with given fields: _a0
-func (_m *MockEntity) setID(_a0 string) {
+// SetID provides a mock function with given fields: _a0
+func (_m *MockEntity) SetID(_a0 string) {
 	_m.Called(_a0)
 }
 
-// setName provides a mock function with given fields: _a0
-func (_m *MockEntity) setName(_a0 string) {
+// SetName provides a mock function with given fields: _a0
+func (_m *MockEntity) SetName(_a0 string) {
 	_m.Called(_a0)
 }
 

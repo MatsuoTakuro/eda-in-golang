@@ -100,13 +100,13 @@ func (_m *MockAggregate) ID() string {
 	return r0
 }
 
-// setID provides a mock function with given fields: _a0
-func (_m *MockAggregate) setID(_a0 string) {
+// SetID provides a mock function with given fields: _a0
+func (_m *MockAggregate) SetID(_a0 string) {
 	_m.Called(_a0)
 }
 
-// setName provides a mock function with given fields: _a0
-func (_m *MockAggregate) setName(_a0 string) {
+// SetName provides a mock function with given fields: _a0
+func (_m *MockAggregate) SetName(_a0 string) {
 	_m.Called(_a0)
 }
 

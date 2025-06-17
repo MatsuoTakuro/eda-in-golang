@@ -127,6 +127,21 @@ func (_m *MockAggregate) PendingVersion() int {
 	return r0
 }
 
+// SetID provides a mock function with given fields: _a0
+func (_m *MockAggregate) SetID(_a0 string) {
+	_m.Called(_a0)
+}
+
+// SetName provides a mock function with given fields: _a0
+func (_m *MockAggregate) SetName(_a0 string) {
+	_m.Called(_a0)
+}
+
+// SetVersion provides a mock function with given fields: _a0
+func (_m *MockAggregate) SetVersion(_a0 int) {
+	_m.Called(_a0)
+}
+
 // Version provides a mock function with no fields
 func (_m *MockAggregate) Version() int {
 	ret := _m.Called()
@@ -143,21 +158,6 @@ func (_m *MockAggregate) Version() int {
 	}
 
 	return r0
-}
-
-// setID provides a mock function with given fields: _a0
-func (_m *MockAggregate) setID(_a0 string) {
-	_m.Called(_a0)
-}
-
-// setName provides a mock function with given fields: _a0
-func (_m *MockAggregate) setName(_a0 string) {
-	_m.Called(_a0)
-}
-
-// setVersion provides a mock function with given fields: _a0
-func (_m *MockAggregate) setVersion(_a0 int) {
-	_m.Called(_a0)
 }
 
 // NewMockAggregate creates a new instance of MockAggregate. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

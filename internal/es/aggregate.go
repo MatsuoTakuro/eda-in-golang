@@ -49,4 +49,4 @@ func (a *aggregate) CommitEvents() {
 
 func (a *aggregate) Version() int           { return a.version }
 func (a *aggregate) PendingVersion() int    { return a.version + len(a.Events()) }
-func (a *aggregate) setVersion(version int) { a.version = version }
+func (a *aggregate) SetVersion(version int) { a.version = version }

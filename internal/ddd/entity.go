@@ -32,5 +32,5 @@ func NewEntity(id, name string) *entity {
 func (e entity) ID() string             { return e.id }
 func (e entity) EntityName() string     { return e.name }
 func (e entity) Equals(other IDer) bool { return e.id == other.ID() }
-func (e *entity) setID(id string)       { e.id = id }
-func (e *entity) setName(name string)   { e.name = name }
+func (e *entity) SetID(id string)       { e.id = id }
+func (e *entity) SetName(name string)   { e.name = name }

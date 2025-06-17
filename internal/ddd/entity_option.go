@@ -6,29 +6,29 @@ import (
 )
 
 type IDSetter interface {
-	setID(string)
+	SetID(string)
 }
 
 func SetID(id string) registry.BuildOption {
 	return func(v interface{}) error {
 		if e, ok := v.(IDSetter); ok {
-			e.setID(id)
+			e.SetID(id)
 			return nil
 		}
-		return fmt.Errorf("%T does not have the method setID(string)", v)
+		return fmt.Errorf("%T does not have the method SetID(string)", v)
 	}
 }
 
 type NameSetter interface {
-	setName(string)
+	SetName(string)
 }
 
 func SetName(name string) registry.BuildOption {
 	return func(v interface{}) error {
 		if e, ok := v.(NameSetter); ok {
-			e.setName(name)
+			e.SetName(name)
 			return nil
 		}
-		return fmt.Errorf("%T does not have the method setName(string)", v)
+		return fmt.Errorf("%T does not have the method SetName(string)", v)
 	}
 }
