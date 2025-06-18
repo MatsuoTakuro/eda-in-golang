@@ -16,12 +16,12 @@ import (
 type ProductCacheRepository struct {
 	tableName string
 	db        postgres.DB
-	fallback  domain.ProductRepository
+	fallback  domain.ProductClient
 }
 
 var _ domain.ProductCacheRepository = (*ProductCacheRepository)(nil)
 
-func NewProductCacheRepository(tableName string, db postgres.DB, fallback domain.ProductRepository) ProductCacheRepository {
+func NewProductCacheRepository(tableName string, db postgres.DB, fallback domain.ProductClient) ProductCacheRepository {
 	return ProductCacheRepository{
 		tableName: tableName,
 		db:        db,

@@ -52,14 +52,14 @@ type (
 	Application struct {
 		baskets   domain.BasketRepository
 		stores    domain.StoreRepository
-		products  domain.ProductRepository
+		products  domain.ProductClient
 		publisher ddd.EventPublisher[ddd.Event]
 	}
 )
 
 var _ App = (*Application)(nil)
 
-func New(baskets domain.BasketRepository, stores domain.StoreRepository, products domain.ProductRepository, publisher ddd.EventPublisher[ddd.Event]) *Application {
+func New(baskets domain.BasketRepository, stores domain.StoreRepository, products domain.ProductClient, publisher ddd.EventPublisher[ddd.Event]) *Application {
 	return &Application{
 		baskets:   baskets,
 		stores:    stores,

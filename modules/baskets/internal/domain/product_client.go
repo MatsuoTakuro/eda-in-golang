@@ -4,6 +4,6 @@ import (
 	"context"
 )
 
-type ProductRepository interface {
+type ProductClient interface {
 	Find(ctx context.Context, productID string) (*Product, error)
 }

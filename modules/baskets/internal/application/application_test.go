@@ -28,7 +28,7 @@ func TestApplication_AddItem(t *testing.T) {
 	type mocks struct {
 		baskets   *domain.MockBasketRepository
 		stores    *domain.MockStoreRepository
-		products  *domain.MockProductRepository
+		products  *domain.MockProductClient
 		publisher *ddd.MockEventPublisher[ddd.Event]
 	}
 	type args struct {
@@ -148,7 +148,7 @@ func TestApplication_AddItem(t *testing.T) {
 			m := mocks{
 				baskets:   domain.NewMockBasketRepository(t),
 				stores:    domain.NewMockStoreRepository(t),
-				products:  domain.NewMockProductRepository(t),
+				products:  domain.NewMockProductClient(t),
 				publisher: ddd.NewMockEventPublisher[ddd.Event](t),
 			}
 			a := New(m.baskets, m.stores, m.products, m.publisher)
@@ -167,7 +167,7 @@ func TestApplication_CancelBasket(t *testing.T) {
 	type fields struct {
 		baskets   *domain.MockBasketRepository
 		stores    *domain.MockStoreRepository
-		products  *domain.MockProductRepository
+		products  *domain.MockProductClient
 		publisher *ddd.MockEventPublisher[ddd.Event]
 	}
 	type args struct {
@@ -255,7 +255,7 @@ func TestApplication_CancelBasket(t *testing.T) {
 			f := fields{
 				baskets:   domain.NewMockBasketRepository(t),
 				stores:    domain.NewMockStoreRepository(t),
-				products:  domain.NewMockProductRepository(t),
+				products:  domain.NewMockProductClient(t),
 				publisher: ddd.NewMockEventPublisher[ddd.Event](t),
 			}
 			a := Application{
@@ -298,7 +298,7 @@ func TestApplication_CheckoutBasket(t *testing.T) {
 	type fields struct {
 		baskets   *domain.MockBasketRepository
 		stores    *domain.MockStoreRepository
-		products  *domain.MockProductRepository
+		products  *domain.MockProductClient
 		publisher *ddd.MockEventPublisher[ddd.Event]
 	}
 	type args struct {
@@ -417,7 +417,7 @@ func TestApplication_CheckoutBasket(t *testing.T) {
 			f := fields{
 				baskets:   domain.NewMockBasketRepository(t),
 				stores:    domain.NewMockStoreRepository(t),
-				products:  domain.NewMockProductRepository(t),
+				products:  domain.NewMockProductClient(t),
 				publisher: ddd.NewMockEventPublisher[ddd.Event](t),
 			}
 			a := Application{
@@ -460,7 +460,7 @@ func TestApplication_GetBasket(t *testing.T) {
 	type fields struct {
 		baskets   *domain.MockBasketRepository
 		stores    *domain.MockStoreRepository
-		products  *domain.MockProductRepository
+		products  *domain.MockProductClient
 		publisher *ddd.MockEventPublisher[ddd.Event]
 	}
 	type args struct {
@@ -508,7 +508,7 @@ func TestApplication_GetBasket(t *testing.T) {
 			f := fields{
 				baskets:   domain.NewMockBasketRepository(t),
 				stores:    domain.NewMockStoreRepository(t),
-				products:  domain.NewMockProductRepository(t),
+				products:  domain.NewMockProductClient(t),
 				publisher: ddd.NewMockEventPublisher[ddd.Event](t),
 			}
 			a := Application{
@@ -561,7 +561,7 @@ func TestApplication_RemoveItem(t *testing.T) {
 	type mocks struct {
 		baskets   *domain.MockBasketRepository
 		stores    *domain.MockStoreRepository
-		products  *domain.MockProductRepository
+		products  *domain.MockProductClient
 		publisher *ddd.MockEventPublisher[ddd.Event]
 	}
 	type args struct {
@@ -655,7 +655,7 @@ func TestApplication_RemoveItem(t *testing.T) {
 			m := mocks{
 				baskets:   domain.NewMockBasketRepository(t),
 				stores:    domain.NewMockStoreRepository(t),
-				products:  domain.NewMockProductRepository(t),
+				products:  domain.NewMockProductClient(t),
 				publisher: ddd.NewMockEventPublisher[ddd.Event](t),
 			}
 			a := Application{
@@ -679,7 +679,7 @@ func TestApplication_StartBasket(t *testing.T) {
 	type mocks struct {
 		baskets   *domain.MockBasketRepository
 		stores    *domain.MockStoreRepository
-		products  *domain.MockProductRepository
+		products  *domain.MockProductClient
 		publisher *ddd.MockEventPublisher[ddd.Event]
 	}
 	type args struct {
@@ -768,7 +768,7 @@ func TestApplication_StartBasket(t *testing.T) {
 			m := mocks{
 				baskets:   domain.NewMockBasketRepository(t),
 				stores:    domain.NewMockStoreRepository(t),
-				products:  domain.NewMockProductRepository(t),
+				products:  domain.NewMockProductClient(t),
 				publisher: ddd.NewMockEventPublisher[ddd.Event](t),
 			}
 			a := Application{
