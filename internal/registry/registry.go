@@ -9,10 +9,13 @@ import (
 type Registry interface {
 	// Serialize serializes v with a serializer registered by the given key
 	Serialize(key string, v interface{}) ([]byte, error)
+	MustSerialize(key string, v interface{}) []byte
 	// Deserialize deserializes data with a deserializer registered by the given key
 	Deserialize(key string, data []byte, options ...BuildOption) (interface{}, error)
+	MustDeserialize(key string, data []byte, options ...BuildOption) interface{}
 	// Build builds v from the given key that was registered with a factory function
 	Build(key string, options ...BuildOption) (interface{}, error)
+	MustBuild(key string, options ...BuildOption) interface{}
 	register(key string, fn func() interface{}, s Serializer, d Deserializer, o []BuildOption) error
 }
 
@@ -49,6 +52,14 @@ func (r *registry) Serialize(key string, v interface{}) ([]byte, error) {
 	return reg.serializer(v)
 }
 
+func (r *registry) MustSerialize(key string, v interface{}) []byte {
+	data, err := r.Serialize(key, v)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
 func (r *registry) Deserialize(key string, data []byte, options ...BuildOption) (interface{}, error) {
 	v, err := r.Build(key, options...)
 	if err != nil {
@@ -61,6 +72,14 @@ func (r *registry) Deserialize(key string, data []byte, options ...BuildOption) 
 	}
 
 	return v, nil
+}
+
+func (r *registry) MustDeserialize(key string, data []byte, options ...BuildOption) interface{} {
+	v, err := r.Deserialize(key, data, options...)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
 
 func (r *registry) Build(key string, options ...BuildOption) (interface{}, error) {
@@ -80,6 +99,14 @@ func (r *registry) Build(key string, options ...BuildOption) (interface{}, error
 	}
 
 	return v, nil
+}
+
+func (r *registry) MustBuild(key string, options ...BuildOption) interface{} {
+	v, err := r.Build(key, options...)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
 
 func (r *registry) register(key string, fn func() interface{}, s Serializer, d Deserializer, o []BuildOption) error {

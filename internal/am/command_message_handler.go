@@ -65,10 +65,12 @@ func (h commandMsgHandler) HandleMessage(ctx context.Context, msg AckableRawMess
 	return h.publishReply(ctx, replyChannel, h.success(reply, commandMsg))
 }
 
+// publishReply publishes a reply message to the specified reply channel.
 func (h commandMsgHandler) publishReply(ctx context.Context, replyChannel string, reply ddd.Reply) error {
 	return h.publisher.Publish(ctx, replyChannel, reply)
 }
 
+// failure creates a failure reply.
 func (h commandMsgHandler) failure(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
 	if reply == nil {
 		reply = ddd.NewReply(FailureReply, nil)
@@ -79,6 +81,7 @@ func (h commandMsgHandler) failure(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
 	return h.applyCorrelationHeaders(reply, cmd)
 }
 
+// success creates a success reply.
 func (h commandMsgHandler) success(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
 	if reply == nil {
 		reply = ddd.NewReply(SuccessReply, nil)
@@ -89,6 +92,7 @@ func (h commandMsgHandler) success(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
 	return h.applyCorrelationHeaders(reply, cmd)
 }
 
+// applyCorrelationHeaders copies correlation headers from the command to the reply.
 func (h commandMsgHandler) applyCorrelationHeaders(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
 	for key, value := range cmd.Metadata() {
 		if key == CommandNameHdr {

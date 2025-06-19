@@ -26,9 +26,7 @@ type eventStream struct {
 }
 
 var (
-	_ EventPublisher  = (*eventStream)(nil)
-	_ EventSubscriber = (*eventStream)(nil)
-	_ EventStream     = (*eventStream)(nil)
+	_ EventStream = (*eventStream)(nil)
 )
 
 func NewEventStream(reg registry.Registry, stream RawMessageStream) *eventStream {
@@ -118,3 +116,7 @@ func (s eventStream) Subscribe(topicName string, handler MessageHandler[EventMes
 }
 
 var ErrMessageSkipped = errors.New("message skipped due to filter")
+
+func (s eventStream) Unsubscribe() error {
+	return s.stream.Unsubscribe()
+}

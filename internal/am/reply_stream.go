@@ -114,3 +114,7 @@ func (s replyStream) Subscribe(topicName string, handler MessageHandler[ReplyMes
 
 	return s.stream.Subscribe(topicName, fn, options...)
 }
+
+func (s replyStream) Unsubscribe() error {
+	return s.stream.Unsubscribe()
+}

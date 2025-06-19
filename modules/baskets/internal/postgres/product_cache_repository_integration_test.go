@@ -7,8 +7,7 @@
 // If you're using VS Code, add the following to `.vscode/settings.json`:
 // "gopls": {
 //     "buildFlags": [
-//         "-tags=integration",
-//         "-tags=database",
+//         "-tags=integration database",
 //     ],
 // }
 

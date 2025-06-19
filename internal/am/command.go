@@ -1,8 +1,6 @@
 package am
 
 import (
-	"context"
-
 	"eda-in-golang/internal/ddd"
 )
 
@@ -33,16 +31,4 @@ func NewCommand(name, destination string, payload ddd.CommandPayload, options ..
 
 func (c command) Destination() string {
 	return c.destination
-}
-
-type CommandMessageHandler interface {
-	HandleMessage(ctx context.Context, msg CommandMessage) (ddd.Reply, error)
-}
-
-type CommandMessageHandlerFunc func(ctx context.Context, msg CommandMessage) (ddd.Reply, error)
-
-var _ CommandMessageHandler = CommandMessageHandlerFunc(nil)
-
-func (f CommandMessageHandlerFunc) HandleMessage(ctx context.Context, cmd CommandMessage) (ddd.Reply, error) {
-	return f(ctx, cmd)
 }

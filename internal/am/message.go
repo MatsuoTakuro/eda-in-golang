@@ -40,6 +40,7 @@ type MessagePublisher[T any] interface {
 // MessageSubscriber is a subscriber for messages.
 type MessageSubscriber[A AckableMessage] interface {
 	Subscribe(topicName string, handler MessageHandler[A], options ...SubscriberOption) error
+	Unsubscribe() error
 }
 
 // MessageStream is a stream for messages.

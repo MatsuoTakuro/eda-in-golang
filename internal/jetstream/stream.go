@@ -228,15 +228,6 @@ func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler
 	}
 }
 
-// TODO: Not sure if we should call this before nats connection is drained.
-func (s *stream) Drain() error {
-	for _, ctx := range s.consumeCtxs {
-		ctx.Drain()
-	}
-
-	return nil
-}
-
 func (s *stream) handleMsgResult(msg *rawMessage, err error) {
 	switch {
 	case err == nil:
@@ -312,3 +303,11 @@ const (
 	msgNameField = "name"
 	msgIDField   = "id"
 )
+
+func (s *stream) Unsubscribe() error {
+	for _, ctx := range s.consumeCtxs {
+		ctx.Drain()
+	}
+
+	return nil
+}

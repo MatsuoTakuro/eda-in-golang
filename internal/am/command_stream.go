@@ -4,7 +4,6 @@ import (
 	"context"
 	"eda-in-golang/internal/ddd"
 	"eda-in-golang/internal/registry"
-	"strings"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -17,10 +16,7 @@ type CommandStream interface {
 }
 
 type CommandPublisher = MessagePublisher[ddd.Command]
-
-type CommandSubscriber interface {
-	Subscribe(topicName string, handler CommandMessageHandler, options ...SubscriberOption) error
-}
+type CommandSubscriber = MessageSubscriber[CommandMessage]
 
 type commandStream struct {
 	reg    registry.Registry
@@ -68,7 +64,7 @@ func (s commandStream) Publish(ctx context.Context, topicName string, command dd
 }
 
 // Subscribe subscribes to a topic for command messages and handles them using the provided handler.
-func (s commandStream) Subscribe(topicName string, handler CommandMessageHandler, options ...SubscriberOption) error {
+func (s commandStream) Subscribe(topicName string, handler MessageHandler[CommandMessage], options ...SubscriberOption) error {
 	cfg := NewSubscriberConfig(options)
 
 	var filters map[string]struct{}
@@ -109,88 +105,12 @@ func (s commandStream) Subscribe(topicName string, handler CommandMessageHandler
 			msg:        msg,
 		}
 
-		replyChannel := commandMsg.Metadata().Get(CommandReplyChannelHdr).(string)
-
-		var reply ddd.Reply
-		reply, err = handler.HandleMessage(ctx, commandMsg)
-		if err != nil {
-			return s.publishReply(ctx, replyChannel, s.failure(reply, commandMsg))
-		}
-
-		return s.publishReply(ctx, replyChannel, s.success(reply, commandMsg))
+		return handler.HandleMessage(ctx, commandMsg)
 	})
 
 	return s.stream.Subscribe(topicName, fn, options...)
 }
 
-// publishReply publishes a reply message to the specified reply channel.
-func (s commandStream) publishReply(ctx context.Context, replyChannel string, reply ddd.Reply) error {
-	metadata, err := structpb.NewStruct(reply.Metadata())
-	if err != nil {
-		return err
-	}
-
-	var payload []byte
-
-	if reply.ReplyName() != SuccessReply && reply.ReplyName() != FailureReply {
-		payload, err = s.reg.Serialize(
-			reply.ReplyName(), reply.Payload(),
-		)
-		if err != nil {
-			return err
-		}
-	}
-
-	data, err := proto.Marshal(&ReplyMessageData{
-		Payload:    payload,
-		OccurredAt: timestamppb.New(reply.OccurredAt()),
-		Metadata:   metadata,
-	})
-	if err != nil {
-		return err
-	}
-
-	return s.stream.Publish(ctx, replyChannel, rawMessage{
-		id:      reply.ID(),
-		name:    reply.ReplyName(),
-		subject: replyChannel,
-		data:    data,
-	})
-}
-
-// failure creates a failure reply.
-func (s commandStream) failure(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
-	if reply == nil {
-		reply = ddd.NewReply(FailureReply, nil)
-	}
-
-	reply.Metadata().Set(ReplyOutcomeHdr, OutcomeFailure)
-
-	return s.applyCorrelationHeaders(reply, cmd)
-}
-
-// success creates a success reply.
-func (s commandStream) success(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
-	if reply == nil {
-		reply = ddd.NewReply(SuccessReply, nil)
-	}
-
-	reply.Metadata().Set(ReplyOutcomeHdr, OutcomeSuccess)
-
-	return s.applyCorrelationHeaders(reply, cmd)
-}
-
-func (s commandStream) applyCorrelationHeaders(reply ddd.Reply, cmd ddd.Command) ddd.Reply {
-	for key, value := range cmd.Metadata() {
-		if key == CommandNameHdr {
-			continue
-		}
-
-		if strings.HasPrefix(key, CommandHdrPrefix) {
-			hdr := ReplyHdrPrefix + key[len(CommandHdrPrefix):]
-			reply.Metadata().Set(hdr, value)
-		}
-	}
-
-	return reply
+func (s commandStream) Unsubscribe() error {
+	return s.stream.Unsubscribe()
 }
