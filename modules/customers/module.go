@@ -93,13 +93,13 @@ func (m Module) Startup(ctx context.Context, mono monolith.Server) (err error) {
 		), nil
 	})
 	container.AddScoped("domainEventHandlers", func(c di.Container) (any, error) {
-		return logging.LogEventHandlerAccess[ddd.AggregateEvent](
+		return logging.LogEventHandlerAccess(
 			handlers.NewDomainEventHandlers(c.Get("eventStream").(am.EventStream)),
 			"DomainEvents", c.Get("logger").(zerolog.Logger),
 		), nil
 	})
 	container.AddScoped("commandHandlers", func(c di.Container) (any, error) {
-		return logging.LogCommandHandlerAccess[ddd.Command](
+		return logging.LogCommandHandlerAccess(
 			handlers.NewCommandHandlers(c.Get("app").(application.App)),
 			"Commands", c.Get("logger").(zerolog.Logger),
 		), nil

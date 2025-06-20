@@ -34,6 +34,24 @@ func (_m *MockEventSubscriber[A]) Subscribe(topicName string, handler MessageHan
 	return r0
 }
 
+// Unsubscribe provides a mock function with no fields
+func (_m *MockEventSubscriber[A]) Unsubscribe() error {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Unsubscribe")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewMockEventSubscriber creates a new instance of MockEventSubscriber. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockEventSubscriber[A AckableMessage](t interface {

@@ -47,6 +47,17 @@ services:
     tty: true
     env_file:
       - docker/.env
+  pact-broker:
+    image: pactfoundation/pact-broker
+    container_name: pact-broker
+    hostname: pact-broker
+    ports:
+      - "9292:9292"
+    depends_on:
+      - postgres
+    environment:
+      PACT_BROKER_DATABASE_URL: postgres://pactuser:pactpass@postgres:5432/pactdb
+
 
 volumes:
   pgdata:

@@ -10,12 +10,12 @@ import (
 )
 
 type domainHandlers[T ddd.AggregateEvent] struct {
-	publisher am.MessagePublisher[ddd.Event]
+	publisher am.EventPublisher
 }
 
 var _ ddd.EventHandler[ddd.AggregateEvent] = (*domainHandlers[ddd.AggregateEvent])(nil)
 
-func NewDomainEventHandlers(publisher am.MessagePublisher[ddd.Event]) ddd.EventHandler[ddd.AggregateEvent] {
+func NewDomainEventHandlers(publisher am.EventPublisher) ddd.EventHandler[ddd.AggregateEvent] {
 	return &domainHandlers[ddd.AggregateEvent]{
 		publisher: publisher,
 	}
@@ -56,7 +56,7 @@ func (h domainHandlers[T]) onCustomerRegistered(ctx context.Context, event ddd.A
 }
 
 func (h domainHandlers[T]) onCustomerSmsChanged(ctx context.Context, event ddd.AggregateEvent) error {
-	payload := event.Payload().(*domain.CustomerRegistered)
+	payload := event.Payload().(*domain.CustomerSmsChanged)
 	return h.publisher.Publish(ctx, customerspb.CustomerAggregateChannel,
 		ddd.NewEvent(customerspb.CustomerSmsChangedEvent, &customerspb.CustomerSmsChanged{
 			Id:        payload.Customer.ID(),

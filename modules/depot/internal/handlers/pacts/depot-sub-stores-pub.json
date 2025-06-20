@@ -1,0 +1,46 @@
+{
+  "consumer": {
+    "name": "depot-sub"
+  },
+  "messages": [
+    {
+      "contents": {
+        "name": "storesapi.StoreCreated",
+        "payload": {
+          "id": "store-id",
+          "location": "NewLocation",
+          "name": "NewStore"
+        }
+      },
+      "description": "a StoreCreated message",
+      "metadata": {
+        "contentType": "application/json"
+      }
+    },
+    {
+      "contents": {
+        "name": "storesapi.StoreRebranded",
+        "payload": {
+          "id": "store-id",
+          "name": "RebrandedStore"
+        }
+      },
+      "description": "a StoreRebranded message",
+      "metadata": {
+        "contentType": "application/json"
+      }
+    }
+  ],
+  "metadata": {
+    "pactRust": {
+      "ffi": "0.4.27",
+      "models": "1.2.8"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "stores-pub"
+  }
+}

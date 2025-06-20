@@ -22,8 +22,10 @@ const (
 )
 
 func RegisterMessages(reg registry.Registry) error {
-	regtr := registrar.NewProtoRegistrar(reg)
+	return RegisterMessagesWithRegistrar(registrar.NewProtoRegistrar(reg))
+}
 
+func RegisterMessagesWithRegistrar(regtr registry.Registrar) error {
 	// Store events
 	if err := regtr.Register(&StoreCreated{}); err != nil {
 		return err

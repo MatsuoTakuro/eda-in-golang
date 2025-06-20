@@ -10,13 +10,13 @@ import (
 )
 
 type domainHandler[T ddd.AggregateEvent] struct {
-	publisher am.MessagePublisher[ddd.Event]
+	publisher am.EventPublisher
 }
 
 var _ ddd.EventHandler[ddd.AggregateEvent] = (*domainHandler[ddd.AggregateEvent])(nil)
 
 // NewDomainEventHandler creates a handler that handle domain events occuring within the module.
-func NewDomainEventHandler(publisher am.MessagePublisher[ddd.Event]) domainHandler[ddd.AggregateEvent] {
+func NewDomainEventHandler(publisher am.EventPublisher) domainHandler[ddd.AggregateEvent] {
 	return domainHandler[ddd.AggregateEvent]{
 		publisher: publisher,
 	}

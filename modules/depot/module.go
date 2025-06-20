@@ -134,13 +134,13 @@ func (Module) Startup(ctx context.Context, mono monolith.Server) error {
 		), nil
 	})
 	container.AddScoped(di.DomainEventHandler, func(c di.Container) (any, error) {
-		return logging.LogEventHandlerAccess[ddd.AggregateEvent](
+		return logging.LogEventHandlerAccess(
 			application.NewDomainEventHandler(c.Get(di.EventStream).(am.EventStream)),
 			"DomainEvents", c.Get(di.Logger).(zerolog.Logger),
 		), nil
 	})
 	container.AddScoped(di.IntegrationEventHandler, func(c di.Container) (any, error) {
-		return logging.LogEventHandlerAccess[ddd.Event](
+		return logging.LogEventHandlerAccess(
 			application.NewIntegrationEventHandler(
 				c.Get(dep.Stores).(domain.StoreCacheRepository),
 				c.Get(dep.Products).(domain.ProductCacheRepository),

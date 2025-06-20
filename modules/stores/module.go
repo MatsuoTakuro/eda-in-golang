@@ -52,7 +52,7 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 		return jetstream.NewStream("stores", mono.Config().Nats.Stream, mono.JS(), c.Get("logger").(zerolog.Logger)), nil
 	})
 	container.AddSingleton("domainDispatcher", func(c di.Container) (any, error) {
-		return ddd.NewEventDispatcher[ddd.AggregateEvent](), nil
+		return ddd.NewEventDispatcher[ddd.Event](), nil
 	})
 	container.AddSingleton("db", func(c di.Container) (any, error) {
 		return mono.DB(), nil
@@ -83,7 +83,6 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 		reg := c.Get("registry").(registry.Registry)
 		return es.AggregateStoreWithMiddleware(
 			pg.NewEventStore("stores.events", tx, reg),
-			es.WithEventPublisher(c.Get("domainDispatcher").(ddd.EventDispatcher[ddd.AggregateEvent])),
 			pg.WithSnapshotStore("stores.snapshots", tx, reg),
 		), nil
 	})
@@ -114,24 +113,25 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 				c.Get("products").(domain.ProductRepository),
 				c.Get("catalog").(domain.CatalogRepository),
 				c.Get("mall").(domain.MallRepository),
+				c.Get("domainDispatcher").(ddd.EventDispatcher[ddd.Event]),
 			),
 			c.Get("logger").(zerolog.Logger),
 		), nil
 	})
 	container.AddScoped("catalogHandlers", func(c di.Container) (any, error) {
-		return logging.LogEventHandlerAccess[ddd.AggregateEvent](
+		return logging.LogEventHandlerAccess(
 			handlers.NewCatalogHandlers(c.Get("catalog").(domain.CatalogRepository)),
 			"Catalog", c.Get("logger").(zerolog.Logger),
 		), nil
 	})
 	container.AddScoped("mallHandlers", func(c di.Container) (any, error) {
-		return logging.LogEventHandlerAccess[ddd.AggregateEvent](
+		return logging.LogEventHandlerAccess(
 			handlers.NewMallHandlers(c.Get("mall").(domain.MallRepository)),
 			"Mall", c.Get("logger").(zerolog.Logger),
 		), nil
 	})
 	container.AddScoped("domainEventHandlers", func(c di.Container) (any, error) {
-		return logging.LogEventHandlerAccess[ddd.AggregateEvent](
+		return logging.LogEventHandlerAccess(
 			handlers.NewDomainEventHandlers(c.Get("eventStream").(am.EventStream)),
 			"DomainEvents", c.Get("logger").(zerolog.Logger),
 		), nil

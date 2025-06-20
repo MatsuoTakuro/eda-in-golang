@@ -14,7 +14,6 @@ import (
 	"eda-in-golang/internal/monolith"
 	pg "eda-in-golang/internal/postgres"
 	"eda-in-golang/internal/registry"
-	"eda-in-golang/internal/registry/registrar"
 	"eda-in-golang/internal/tm"
 	"eda-in-golang/modules/baskets/basketspb"
 	"eda-in-golang/modules/baskets/internal/application"
@@ -35,7 +34,7 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 	// setup Driven adapters
 	container.AddSingleton("registry", func(c di.Container) (any, error) {
 		reg := registry.New()
-		if err := registrations(reg); err != nil {
+		if err := domain.Registrations(reg); err != nil {
 			return nil, err
 		}
 		if err := basketspb.Registrations(reg); err != nil {
@@ -161,42 +160,6 @@ func (m *Module) Startup(ctx context.Context, mono monolith.Server) (err error) 
 	}
 	startOutboxProcessor(ctx, container)
 	return
-}
-
-func registrations(reg registry.Registry) error {
-	regtr := registrar.NewJsonRegistrar(reg)
-
-	// Basket
-	if err := regtr.Register(domain.Basket{}, func(v interface{}) error {
-		basket := v.(*domain.Basket)
-		basket.Aggregate = es.NewAggregate("", domain.BasketAggregate)
-		basket.Items = make(map[string]domain.Item)
-		return nil
-	}); err != nil {
-		return err
-	}
-	// basket events
-	if err := regtr.Register(domain.BasketStarted{}); err != nil {
-		return err
-	}
-	if err := regtr.Register(domain.BasketCanceled{}); err != nil {
-		return err
-	}
-	if err := regtr.Register(domain.BasketCheckedOut{}); err != nil {
-		return err
-	}
-	if err := regtr.Register(domain.BasketItemAdded{}); err != nil {
-		return err
-	}
-	if err := regtr.Register(domain.BasketItemRemoved{}); err != nil {
-		return err
-	}
-	// basket snapshots
-	if err := regtr.RegisterWithKey(domain.BasketV1{}.SnapshotName(), domain.BasketV1{}); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func startOutboxProcessor(ctx context.Context, container di.Container) {
