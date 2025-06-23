@@ -56,19 +56,21 @@ func (h mallHandlers[T]) HandleEvent(ctx context.Context, event T) error {
 }
 
 func (h mallHandlers[T]) onStoreCreated(ctx context.Context, event ddd.Event) error {
-	payload := event.Payload().(*domain.StoreCreated)
-	return h.mall.AddStore(ctx, event.ID(), payload.Name, payload.Location)
+	store := event.Payload().(*domain.Store)
+	return h.mall.AddStore(ctx, store.ID(), store.Name, store.Location)
 }
 
 func (h mallHandlers[T]) onStoreParticipationEnabled(ctx context.Context, event ddd.Event) error {
-	return h.mall.SetStoreParticipation(ctx, event.ID(), true)
+	store := event.Payload().(*domain.Store)
+	return h.mall.SetStoreParticipation(ctx, store.ID(), true)
 }
 
 func (h mallHandlers[T]) onStoreParticipationDisabled(ctx context.Context, event ddd.Event) error {
-	return h.mall.SetStoreParticipation(ctx, event.ID(), false)
+	store := event.Payload().(*domain.Store)
+	return h.mall.SetStoreParticipation(ctx, store.ID(), false)
 }
 
 func (h mallHandlers[T]) onStoreRebranded(ctx context.Context, event ddd.Event) error {
-	payload := event.Payload().(*domain.StoreRebranded)
-	return h.mall.RenameStore(ctx, event.ID(), payload.Name)
+	store := event.Payload().(*domain.Store)
+	return h.mall.RenameStore(ctx, store.ID(), store.Name)
 }

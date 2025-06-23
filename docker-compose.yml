@@ -12,7 +12,10 @@ services:
     env_file:
       - docker/.env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
     command: ["./wait-for", "postgres:5432", "--", "/entrypoint"]
   postgres:
     container_name: postgres
@@ -26,6 +29,11 @@ services:
     volumes:
       - 'pgdata:/var/lib/postgresql/data'
       - './docker/database:/docker-entrypoint-initdb.d'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
   nats:
     container_name: nats
     hostname: nats
@@ -38,11 +46,17 @@ services:
       - /var/lib/nats/data
     volumes:
       - 'jsdata:/var/lib/nats/data'
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "4222"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
   nats-box:
     image: natsio/nats-box
     container_name: nats-box
     depends_on:
-      - nats
+      nats:
+        condition: service_healthy
     entrypoint: /bin/sh
     tty: true
     env_file:
@@ -54,7 +68,8 @@ services:
     ports:
       - "9292:9292"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       PACT_BROKER_DATABASE_URL: postgres://pactuser:pactpass@postgres:5432/pactdb
 

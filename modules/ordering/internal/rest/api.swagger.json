@@ -127,6 +127,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/orderingpbItem"
           }
         },
@@ -145,7 +146,8 @@
           "type": "string"
         },
         "accepted": {
-          "type": "boolean"
+          "type": "boolean",
+          "title": "true if the order was already created due to idempotency"
         }
       }
     },
@@ -197,6 +199,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/orderingpbItem"
           }
         },
@@ -230,6 +233,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         }

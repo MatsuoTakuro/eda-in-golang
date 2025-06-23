@@ -1,4 +1,4 @@
-install-tools:
+install.tools:
 	@echo installing tools && \
 	go install \
 	github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
@@ -30,3 +30,8 @@ publish.pacts:
 				--consumer-app-version $(PUBLISH_VERSION) \
 				--broker-base-url $(PACT_BROKER_URL); \
 		done
+
+test.all: publish.pacts
+	@echo "Running all tests..."
+	go test -tags="integration e2e" ./...
+	@echo "Tests completed."

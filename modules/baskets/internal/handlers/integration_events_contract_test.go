@@ -87,10 +87,13 @@ func TestStoresConsumer(t *testing.T) {
 			msgConsumerFn := func(contents v4.MessageContents) error {
 				event := contents.Content.(*rawEvent)
 
+				// convert the raw event payload to a json
 				data, err := json.Marshal(event.Payload)
 				if err != nil {
 					return err
 				}
+				// deserialize the json payload to a proto message
+				// for asynchronous message handling
 				payload := reg.MustDeserialize(event.Name, data)
 
 				return handlers.HandleEvent(
