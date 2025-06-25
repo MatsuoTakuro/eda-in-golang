@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -e
+
+DEBUG_PORT="${1:-40000}"  # default debug port
+
+if [ "$DEBUG" = "true" ]; then
+  echo "starting application with debugger on port ${DEBUG_PORT}..."
+  exec /go/bin/dlv exec /mallbots/service \
+    --headless --listen=:$DEBUG_PORT --api-version=2 --accept-multiclient
+else
+  echo "starting application..."
+  exec /mallbots/service
+fi

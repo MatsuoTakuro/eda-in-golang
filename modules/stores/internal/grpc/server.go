@@ -193,6 +193,9 @@ func (s server) GetCatalog(ctx context.Context, request *storespb.GetCatalogRequ
 }
 
 func (s server) storeFromDomain(store *domain.MallStore) *storespb.Store {
+	if store == nil {
+		return nil
+	}
 	return &storespb.Store{
 		Id:            store.ID,
 		Name:          store.Name,
@@ -202,6 +205,9 @@ func (s server) storeFromDomain(store *domain.MallStore) *storespb.Store {
 }
 
 func (s server) productFromDomain(product *domain.CatalogProduct) *storespb.Product {
+	if product == nil {
+		return nil
+	}
 	return &storespb.Product{
 		Id:          product.ID,
 		StoreId:     product.StoreID,

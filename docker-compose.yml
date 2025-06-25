@@ -1,26 +1,333 @@
 services:
+  #
+  # docker compose --profile monolith up
+  #
   monolith:
     container_name: monolith
     hostname: monolith
+    image: mallbots-monolith
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.monolith
     ports:
       - '8080:8080'
       - '8085:8085'
       - '40000:40000'
-    env_file:
-      - docker/.env
+    environment:
+      ENVIRONMENT: development
+      DEBUG: false
+      PG_CONN: host=postgres dbname=mallbots user=mallbots_user password=mallbots_pass
+      NATS_URL: nats:4222
     depends_on:
       postgres:
         condition: service_healthy
       nats:
         condition: service_healthy
-    command: ["./wait-for", "postgres:5432", "--", "/entrypoint"]
+    command: ["./wait-for", "postgres:5432", "--", "/entrypoint_monolith"]
+    profiles:
+      - monolith
+    networks:
+      - mallbots
+  #
+  # docker compose --profile microservices up
+  #
+  baskets:
+    container_name: baskets
+    hostname: baskets
+    image: mallbots-baskets
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.microservices
+      args:
+        service: baskets
+    expose:
+      - '9000'
+    ports:
+      - '40001:40001'
+    environment:
+      ENVIRONMENT: development
+      RPC_SERVICES: 'STORES=stores:9000,CUSTOMERS=customers:9000'
+      PG_CONN: host=postgres dbname=baskets user=baskets_user password=baskets_pass search_path=baskets,public
+      NATS_URL: nats:4222
+      DEBUG: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    command: [ "./wait-for", "postgres:5432", "--", "/entrypoint_microservices", "40001" ]
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+  cosec:
+    container_name: cosec
+    hostname: cosec
+    image: mallbots-cosec
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.microservices
+      args:
+        service: cosec
+    ports:
+      - '40002:40002'
+    expose:
+      - '9000'
+    environment:
+      ENVIRONMENT: development
+      RPC_SERVICES: 'STORES=stores:9000,CUSTOMERS=customers:9000'
+      PG_CONN: host=postgres dbname=cosec user=cosec_user password=cosec_pass search_path=cosec,public
+      NATS_URL: nats:4222
+      DEBUG: false
+    depends_on:
+      nats:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: [ "./wait-for", "postgres:5432", "--", "/entrypoint_microservices", "40002" ]
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+  customers:
+    container_name: customers
+    hostname: customers
+    image: mallbots-customers
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.microservices
+      args:
+        service: customers
+    ports:
+      - '40003:40003'
+    expose:
+      - '9000'
+    environment:
+      ENVIRONMENT: development
+      RPC_SERVICES: 'STORES=stores:9000,CUSTOMERS=customers:9000'
+      PG_CONN: host=postgres dbname=customers user=customers_user password=customers_pass search_path=customers,public
+      NATS_URL: nats:4222
+      DEBUG: false
+    depends_on:
+      nats:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: [ "./wait-for", "postgres:5432", "--", "/entrypoint_microservices", "40003" ]
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+  depot:
+    container_name: depot
+    hostname: depot
+    image: mallbots-depot
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.microservices
+      args:
+        service: depot
+    ports:
+      - '40004:40004'
+    expose:
+      - '9000'
+    environment:
+      ENVIRONMENT: development
+      RPC_SERVICES: 'STORES=stores:9000,CUSTOMERS=customers:9000'
+      PG_CONN: host=postgres dbname=depot user=depot_user password=depot_pass search_path=depot,public
+      NATS_URL: nats:4222
+      DEBUG: false
+    depends_on:
+      nats:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: [ "./wait-for", "postgres:5432", "--", "/entrypoint_microservices", "40004" ]
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+  notifications:
+    container_name: notifications
+    hostname: notifications
+    image: mallbots-notifications
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.microservices
+      args:
+        service: notifications
+    ports:
+      - '40005:40005'
+    expose:
+      - '9000'
+    environment:
+      ENVIRONMENT: development
+      RPC_SERVICES: 'STORES=stores:9000,CUSTOMERS=customers:9000'
+      PG_CONN: host=postgres dbname=notifications user=notifications_user password=notifications_pass search_path=notifications,public
+      NATS_URL: nats:4222
+      DEBUG: false
+    depends_on:
+      nats:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: [ "./wait-for", "postgres:5432", "--", "/entrypoint_microservices", "40005" ]
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+  ordering:
+    container_name: ordering
+    hostname: ordering
+    image: mallbots-ordering
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.microservices
+      args:
+        service: ordering
+    ports:
+      - '40006:40006'
+    expose:
+      - '9000'
+    environment:
+      ENVIRONMENT: development
+      RPC_SERVICES: 'STORES=stores:9000,CUSTOMERS=customers:9000'
+      PG_CONN: host=postgres dbname=ordering user=ordering_user password=ordering_pass search_path=ordering,public
+      NATS_URL: nats:4222
+      DEBUG: false
+    depends_on:
+      nats:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: [ "./wait-for", "postgres:5432", "--", "/entrypoint_microservices", "40006" ]
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+  payments:
+    container_name: payments
+    hostname: payments
+    image: mallbots-payments
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.microservices
+      args:
+        service: payments
+    ports:
+      - '40007:40007'
+    expose:
+      - '9000'
+    environment:
+      ENVIRONMENT: development
+      RPC_SERVICES: 'STORES=stores:9000,CUSTOMERS=customers:9000'
+      PG_CONN: host=postgres dbname=payments user=payments_user password=payments_pass search_path=payments,public
+      NATS_URL: nats:4222
+      DEBUG: false
+    depends_on:
+      nats:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: [ "./wait-for", "postgres:5432", "--", "/entrypoint_microservices", "40007" ]
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+  search:
+    container_name: search
+    hostname: search
+    image: mallbots-search
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.microservices
+      args:
+        service: search
+    ports:
+      - '40008:40008'
+    expose:
+      - '9000'
+    environment:
+      ENVIRONMENT: development
+      RPC_SERVICES: 'STORES=stores:9000,CUSTOMERS=customers:9000'
+      PG_CONN: host=postgres dbname=search user=search_user password=search_pass search_path=search,public
+      NATS_URL: nats:4222
+      DEBUG: false
+    depends_on:
+      nats:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: [ "./wait-for", "postgres:5432", "--", "/entrypoint_microservices", "40008" ]
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+  stores:
+    container_name: stores
+    hostname: stores
+    image: mallbots-stores
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.microservices
+      args:
+        service: stores
+    ports:
+      - '40009:40009'
+    expose:
+      - '9000'
+    environment:
+      ENVIRONMENT: development
+      RPC_SERVICES: 'STORES=stores:9000,CUSTOMERS=customers:9000'
+      PG_CONN: host=postgres dbname=stores user=stores_user password=stores_pass search_path=stores,public
+      NATS_URL: nats:4222
+      DEBUG: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    command: [ "./wait-for", "postgres:5432", "--", "/entrypoint_microservices", "40009" ]
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+  reverse-proxy:
+    container_name: proxy
+    hostname: proxy
+    image: nginx:alpine
+    ports:
+      - '8080:8080'
+    volumes:
+      - './docker/nginx.conf:/etc/nginx/nginx.conf'
+    profiles:
+      - microservices
+    networks:
+      - mallbots
+    depends_on:
+      baskets:
+        condition: service_started
+      cosec:
+        condition: service_started
+      customers:
+        condition: service_started
+      depot:
+        condition: service_started
+      notifications:
+        condition: service_started
+      ordering:
+        condition: service_started
+      payments:
+        condition: service_started
+      search:
+        condition: service_started
+      stores:
+        condition: service_started
+
   postgres:
     container_name: postgres
     hostname: postgres
-    image: postgres:12-alpine
+    image: postgres:14-alpine
     restart: always
     environment:
       POSTGRES_PASSWORD: itsasecret
@@ -34,6 +341,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - mallbots
+    profiles:
+      - microservices
+      - monolith
   nats:
     container_name: nats
     hostname: nats
@@ -51,6 +363,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - mallbots
+    profiles:
+      - microservices
+      - monolith
   nats-box:
     image: natsio/nats-box
     container_name: nats-box
@@ -59,21 +376,39 @@ services:
         condition: service_healthy
     entrypoint: /bin/sh
     tty: true
-    env_file:
-      - docker/.env
-  pact-broker:
-    image: pactfoundation/pact-broker
-    container_name: pact-broker
-    hostname: pact-broker
+    environment:
+      NATS_URL: nats:4222
+    networks:
+      - mallbots
+    profiles:
+      - microservices
+      - monolith
+  pact:
+    container_name: pact
+    hostname: pact
+    image: pactfoundation/pact-broker:2
     ports:
       - "9292:9292"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      PACT_BROKER_DATABASE_URL: postgres://pactuser:pactpass@postgres:5432/pactdb
-
+      PACT_BROKER_DATABASE_URL: 'postgres://pactuser:pactpass@postgres/pactdb'
+      PACT_BROKER_BASIC_AUTH_USERNAME: pactuser
+      PACT_BROKER_BASIC_AUTH_PASSWORD: pactpass
+      PACT_BROKER_ALLOW_PUBLIC_READ: 'true'
+      PACT_BROKER_DATABASE_CONNECT_MAX_RETRIES: 5
+      PACT_BROKER_BASE_URL: 'http://localhost:9292 http://pact-broker:9292'
+    networks:
+      - mallbots
+    profiles:
+      - microservices
+      - monolith
 
 volumes:
   pgdata:
   jsdata:
+
+networks:
+  mallbots:
+    driver: bridge

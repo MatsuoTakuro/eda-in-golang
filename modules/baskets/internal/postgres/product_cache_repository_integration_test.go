@@ -126,7 +126,7 @@ func (s *productCacheSuite) SetupSuite() {
 	}
 
 	goose.SetLogger(&log.SilentLogger{})
-	goose.SetBaseFS(migrations.FS)
+	goose.SetBaseFS(migrations.MonoFS)
 	if err := goose.SetDialect("postgres"); err != nil {
 		s.T().Fatal(err)
 	}

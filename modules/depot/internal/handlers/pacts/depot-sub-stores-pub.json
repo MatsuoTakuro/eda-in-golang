@@ -29,6 +29,20 @@
       "metadata": {
         "contentType": "application/json"
       }
+    },
+    {
+      "contents": {
+        "name": "storesapi.StoreCreated",
+        "payload": {
+          "id": "store-id",
+          "location": "NewLocation",
+          "name": "NewStore"
+        }
+      },
+      "description": "a StoreCreated message",
+      "metadata": {
+        "contentType": "application/json"
+      }
     }
   ],
   "metadata": {

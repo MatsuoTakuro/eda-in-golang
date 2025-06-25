@@ -4,7 +4,7 @@ import (
 	"embed"
 )
 
-// FS provides embedded SQL migration files for Goose to run without external file access.
+// MonoFS provides embedded SQL migration files for the mono-repo structure.
 //
 //go:embed *.sql
-var FS embed.FS
+var MonoFS embed.FS

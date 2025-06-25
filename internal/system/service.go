@@ -1,10 +1,11 @@
-package monolith
+package system
 
 import (
 	"context"
 	"database/sql"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
@@ -13,16 +14,21 @@ import (
 	"eda-in-golang/internal/runner"
 )
 
-type Server interface {
+// Service represents a microservice with access to shared infrastructure and common communication layers.
+type Service interface {
 	Config() config.AppConfig
 	DB() *sql.DB
+	Nats() *nats.Conn
 	JS() jetstream.JetStream
-	Logger() zerolog.Logger
 	Mux() *chi.Mux
 	RPC() *grpc.Server
 	Runner() runner.Runner
+	RunFuncs
+	Logger() zerolog.Logger
 }
 
-type Module interface {
-	Startup(context.Context, Server) error
+type RunFuncs interface {
+	RunWeb(context.Context) error
+	RunRPC(context.Context) error
+	RunStream(context.Context) error
 }

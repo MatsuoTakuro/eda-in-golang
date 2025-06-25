@@ -13,17 +13,17 @@ type MockProductCacheRepository struct {
 	mock.Mock
 }
 
-// Add provides a mock function with given fields: ctx, productID, storeID, name
-func (_m *MockProductCacheRepository) Add(ctx context.Context, productID string, storeID string, name string) error {
-	ret := _m.Called(ctx, productID, storeID, name)
+// Add provides a mock function with given fields: ctx, productID, storeID, name, price
+func (_m *MockProductCacheRepository) Add(ctx context.Context, productID string, storeID string, name string, price float64) error {
+	ret := _m.Called(ctx, productID, storeID, name, price)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Add")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
-		r0 = rf(ctx, productID, storeID, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, float64) error); ok {
+		r0 = rf(ctx, productID, storeID, name, price)
 	} else {
 		r0 = ret.Error(0)
 	}
