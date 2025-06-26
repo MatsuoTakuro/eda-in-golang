@@ -29,7 +29,7 @@ func NewOutboxStore(tableName string, db DB) outboxStore {
 	}
 }
 
-func (s outboxStore) Save(ctx context.Context, msg am.RawMessage) error {
+func (s outboxStore) Save(ctx context.Context, msg am.Message) error {
 
 	if msg == nil {
 		return fmt.Errorf("outbox message cannot be nil")
@@ -45,6 +45,12 @@ func (s outboxStore) Save(ctx context.Context, msg am.RawMessage) error {
 	}
 	if msg.Data() == nil {
 		return fmt.Errorf("outbox message data cannot be nil: %+v", msg)
+	}
+	if msg.SentAt().IsZero() {
+		return fmt.Errorf("outbox message sent_at cannot be zero: %+v", msg)
+	}
+	if msg.Metadata() == nil {
+		return fmt.Errorf("outbox message metadata cannot be nil: %+v", msg)
 	}
 
 	const query = "INSERT INTO %s (id, name, subject, data) VALUES ($1, $2, $3, $4)"
@@ -62,9 +68,9 @@ func (s outboxStore) Save(ctx context.Context, msg am.RawMessage) error {
 	return err
 }
 
-func (s outboxStore) FindUnpublished(ctx context.Context, limit int) ([]am.RawMessage, error) {
+func (s outboxStore) FindUnpublished(ctx context.Context, limit int) ([]am.Message, error) {
 	// query by published_at is null
-	const query = "SELECT id, name, subject, data FROM %s WHERE published_at IS NULL LIMIT %d"
+	const query = "SELECT id, name, subject, data, metadata, sent_at FROM %s WHERE published_at IS NULL LIMIT %d"
 
 	rows, err := s.db.QueryContext(ctx, s.table(query, limit))
 	if err != nil {
@@ -77,7 +83,7 @@ func (s outboxStore) FindUnpublished(ctx context.Context, limit int) ([]am.RawMe
 		}
 	}(rows)
 
-	var msgs []am.RawMessage
+	var msgs []am.Message
 
 	for rows.Next() {
 		msg := outboxMessage{}

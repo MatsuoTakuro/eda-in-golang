@@ -8,12 +8,17 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	FailureReply = "reply.Failure"
+	SuccessReply = "reply.Success"
+)
+
 type replyMsgHandler struct {
 	reg     registry.Registry
 	handler ddd.ReplyHandler[ddd.Reply]
 }
 
-var _ RawMessageHandler = (*replyMsgHandler)(nil)
+var _ MessageHandler = (*replyMsgHandler)(nil)
 
 func NewReplyMessageHandler(reg registry.Registry, handler ddd.ReplyHandler[ddd.Reply]) replyMsgHandler {
 	return replyMsgHandler{
@@ -22,7 +27,7 @@ func NewReplyMessageHandler(reg registry.Registry, handler ddd.ReplyHandler[ddd.
 	}
 }
 
-func (h replyMsgHandler) HandleMessage(ctx context.Context, msg AckableRawMessage) error {
+func (h replyMsgHandler) HandleMessage(ctx context.Context, msg IncomingMessage) error {
 	var replyData ReplyMessageData
 
 	err := proto.Unmarshal(msg.Data(), &replyData)

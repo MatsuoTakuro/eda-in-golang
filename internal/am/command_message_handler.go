@@ -9,29 +9,43 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	CommandHdrPrefix       = "COMMAND_"
+	CommandNameHdr         = CommandHdrPrefix + "NAME"
+	CommandReplyChannelHdr = CommandHdrPrefix + "REPLY_CHANNEL"
+
+	OutcomeSuccess = "SUCCESS"
+	OutcomeFailure = "FAILURE"
+
+	ReplyHdrPrefix  = "REPLY_"
+	ReplyNameHdr    = ReplyHdrPrefix + "NAME"
+	ReplyOutcomeHdr = ReplyHdrPrefix + "OUTCOME"
+)
+
 type commandMsgHandler struct {
-	reg       registry.Registry
-	publisher ReplyPublisher
-	handler   ddd.CommandHandler[ddd.Command]
+	reg            registry.Registry
+	replyPublisher ReplyPublisher
+	cmdHandler     ddd.CommandHandler[ddd.Command]
 }
 
-var _ RawMessageHandler = (*commandMsgHandler)(nil)
+var _ MessageHandler = (*commandMsgHandler)(nil)
 
 func NewCommandMessageHandler(
 	reg registry.Registry,
-	publisher ReplyPublisher,
-	handler ddd.CommandHandler[ddd.Command],
-) commandMsgHandler {
-	return commandMsgHandler{
-		reg:       reg,
-		publisher: publisher,
-		handler:   handler,
-	}
+	replyPublisher ReplyPublisher,
+	cmdHandler ddd.CommandHandler[ddd.Command],
+	mws ...MessageHandlerMiddleware,
+) MessageHandler {
+	return messageHandlerWithMiddleware(commandMsgHandler{
+		reg:            reg,
+		replyPublisher: replyPublisher,
+		cmdHandler:     cmdHandler,
+	}, mws...)
 }
 
 // HandleMessage converts the raw message into a command message,
 // deserializes the payload, and invokes the command handler.
-func (h commandMsgHandler) HandleMessage(ctx context.Context, msg AckableRawMessage) error {
+func (h commandMsgHandler) HandleMessage(ctx context.Context, msg IncomingMessage) error {
 	var commandData CommandMessageData
 
 	err := proto.Unmarshal(msg.Data(), &commandData)
@@ -50,14 +64,13 @@ func (h commandMsgHandler) HandleMessage(ctx context.Context, msg AckableRawMess
 		id:         msg.ID(),
 		name:       commandName,
 		payload:    payload,
-		metadata:   commandData.GetMetadata().AsMap(),
 		occurredAt: commandData.GetOccurredAt().AsTime(),
 		msg:        msg,
 	}
 
 	replyChannel := commandMsg.Metadata().Get(CommandReplyChannelHdr).(string)
 
-	reply, err := h.handler.HandleCommand(ctx, commandMsg)
+	reply, err := h.cmdHandler.HandleCommand(ctx, commandMsg)
 	if err != nil {
 		return h.publishReply(ctx, replyChannel, h.failure(reply, commandMsg))
 	}
@@ -67,7 +80,7 @@ func (h commandMsgHandler) HandleMessage(ctx context.Context, msg AckableRawMess
 
 // publishReply publishes a reply message to the specified reply channel.
 func (h commandMsgHandler) publishReply(ctx context.Context, replyChannel string, reply ddd.Reply) error {
-	return h.publisher.Publish(ctx, replyChannel, reply)
+	return h.replyPublisher.Publish(ctx, replyChannel, reply)
 }
 
 // failure creates a failure reply.

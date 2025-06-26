@@ -6,36 +6,36 @@ import (
 	"github.com/stackus/errors"
 )
 
-type fakeMessage[O any] struct {
+type fakeMessage struct {
 	subject string
-	payload O
+	payload Message
 }
 
-type FakeMessagePublisher[O any] struct {
-	messages []fakeMessage[O]
+type FakeMessagePublisher struct {
+	messages []fakeMessage
 }
 
-var _ MessagePublisher[any] = (*FakeMessagePublisher[any])(nil)
+var _ MessagePublisher = (*FakeMessagePublisher)(nil)
 
-func NewFakeMessagePublisher[O any]() *FakeMessagePublisher[O] {
-	return &FakeMessagePublisher[O]{
-		messages: []fakeMessage[O]{},
+func NewFakeMessagePublisher() *FakeMessagePublisher {
+	return &FakeMessagePublisher{
+		messages: []fakeMessage{},
 	}
 }
 
-func (p *FakeMessagePublisher[O]) Publish(ctx context.Context, topicName string, v O) error {
-	p.messages = append(p.messages, fakeMessage[O]{topicName, v})
+func (p *FakeMessagePublisher) Publish(ctx context.Context, topicName string, msg Message) error {
+	p.messages = append(p.messages, fakeMessage{topicName, msg})
 	return nil
 }
 
-func (p *FakeMessagePublisher[O]) Reset() {
-	p.messages = []fakeMessage[O]{}
+func (p *FakeMessagePublisher) Reset() {
+	p.messages = []fakeMessage{}
 }
 
-func (p *FakeMessagePublisher[O]) Last() (string, O, error) {
-	var v O
+func (p *FakeMessagePublisher) Last() (string, Message, error) {
+	var msg Message
 	if len(p.messages) == 0 {
-		return "", v, errors.ErrNotFound.Msg("no messages have been published")
+		return "", msg, errors.ErrNotFound.Msg("no messages have been published")
 	}
 
 	last := p.messages[len(p.messages)-1]

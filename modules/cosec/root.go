@@ -79,7 +79,7 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 		return am.NewEventStream(c.Get("registry").(registry.Registry), c.Get("txStream").(am.RawMessageStream)), nil
 	})
 	container.AddScoped("commandStream", func(c di.Container) (any, error) {
-		return am.NewCommandStream(c.Get("registry").(registry.Registry), c.Get("txStream").(am.RawMessageStream)), nil
+		return am.NewCommandPublisher(c.Get("registry").(registry.Registry), c.Get("txStream").(am.RawMessageStream)), nil
 	})
 	container.AddScoped("replyStream", func(c di.Container) (any, error) {
 		return am.NewReplyStream(c.Get("registry").(registry.Registry), c.Get("txStream").(am.RawMessageStream)), nil

@@ -83,7 +83,7 @@ func Root(ctx context.Context, svc system.Service) error {
 		), nil
 	})
 	container.AddScoped(di.CommandStream, func(c di.Container) (any, error) {
-		return am.NewCommandStream(
+		return am.NewCommandPublisher(
 			c.Get(di.Registry).(registry.Registry),
 			c.Get(di.TXStream).(am.RawMessageStream),
 		), nil

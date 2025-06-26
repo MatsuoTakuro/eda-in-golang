@@ -32,7 +32,7 @@ func NewIntegrationEventHandlers(orders application.OrderRepository, customers a
 }
 
 func RegisterIntegrationEventHandlers(subscriber am.EventSubscriber, handlers ddd.EventHandler[ddd.Event]) (err error) {
-	evtMsgHandler := am.MessageHandlerFunc[am.EventMessage](func(ctx context.Context, eventMsg am.EventMessage) error {
+	evtMsgHandler := am.MessageHandlerFunc[am.IncomingEventMessage](func(ctx context.Context, eventMsg am.IncomingEventMessage) error {
 		return handlers.HandleEvent(ctx, eventMsg)
 	})
 

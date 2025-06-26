@@ -1,58 +1,58 @@
 package am
 
 import (
-	"context"
+	"time"
 
 	"eda-in-golang/internal/ddd"
 )
 
-// AckableMessage represents a message that supports acknowledgment control.
-type AckableMessage interface {
-	Message
-	Ack() error
-	NAck() error
-	Extend() error
-	Kill() error
+type Message interface {
+	MessageBase
+	Data() []byte
 }
 
-// Message is a message interface that represents a message in the system.
+// MessageBase is a message interface that represents a message in the system.
 // It can be an event, command, or any other type of message.
-type Message interface {
+type MessageBase interface {
 	// ID returns the unique identifier of the message.
 	ddd.IDer
 	// Subject returns the subject (topic) of the message.
 	Subject() string
 	// MessageName returns the type name of the message.
 	MessageName() string
+	Metadata() ddd.Metadata
+	SentAt() time.Time
 }
 
-type MessageHandler[I AckableMessage] interface {
-	HandleMessage(ctx context.Context, msg I) error
+type message struct {
+	id       string
+	name     string
+	subject  string
+	data     []byte
+	metadata ddd.Metadata
+	sentAt   time.Time
 }
 
-// MessagePublisher is a publisher for messages.
-type MessagePublisher[T any] interface {
-	// Publish publishes a message to the specified topic or subject.
-	// While topicName is always accepted, an implementation may derive it from the message (e.g., subject) instead.
-	Publish(ctx context.Context, topicName string, v T) error
+var _ Message = (*message)(nil)
+
+func (m message) ID() string             { return m.id }
+func (m message) Subject() string        { return m.subject }
+func (m message) MessageName() string    { return m.name }
+func (m message) Data() []byte           { return m.data }
+func (m message) Metadata() ddd.Metadata { return m.metadata }
+func (m message) SentAt() time.Time      { return m.sentAt }
+
+type IncomingMessage interface {
+	IncomingMessageBase
+	Data() []byte
 }
 
-// MessageSubscriber is a subscriber for messages.
-type MessageSubscriber[A AckableMessage] interface {
-	Subscribe(topicName string, handler MessageHandler[A], options ...SubscriberOption) error
-	Unsubscribe() error
-}
-
-// MessageStream is a stream for messages.
-type MessageStream[T any, A AckableMessage] interface {
-	MessagePublisher[T]
-	MessageSubscriber[A]
-}
-
-type MessageHandlerFunc[A AckableMessage] func(ctx context.Context, msg A) error
-
-var _ MessageHandler[AckableMessage] = MessageHandlerFunc[AckableMessage](nil)
-
-func (f MessageHandlerFunc[A]) HandleMessage(ctx context.Context, msg A) error {
-	return f(ctx, msg)
+// IncomingMessageBase represents a message that supports acknowledgment control.
+type IncomingMessageBase interface {
+	MessageBase
+	ReceivedAt() time.Time
+	Ack() error
+	NAck() error
+	Extend() error
+	Kill() error
 }

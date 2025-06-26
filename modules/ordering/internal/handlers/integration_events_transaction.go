@@ -13,7 +13,7 @@ import (
 )
 
 func RegisterIntegrationEventHandlersTx(container di.Container) error {
-	evtMsgHandler := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.AckableRawMessage) (err error) {
+	evtMsgHandler := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingMessage) (err error) {
 		ctx = container.Scoped(ctx)
 		defer func(tx *sql.Tx) {
 			if p := recover(); p != nil {

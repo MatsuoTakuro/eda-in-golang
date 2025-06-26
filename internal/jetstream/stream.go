@@ -3,12 +3,15 @@ package jetstream
 import (
 	"context"
 	"errors"
+	sync "sync"
 	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"eda-in-golang/internal/am"
 )
@@ -19,11 +22,12 @@ type stream struct {
 	module      string
 	streamName  string
 	js          jetstream.JetStream
+	mu          sync.Mutex
 	consumeCtxs []jetstream.ConsumeContext
 	logger      zerolog.Logger
 }
 
-var _ am.RawMessageStream = (*stream)(nil)
+var _ am.MessageStream = (*stream)(nil)
 
 func NewStream(
 	module,
@@ -39,16 +43,23 @@ func NewStream(
 	}
 }
 
-func (s *stream) Publish(ctx context.Context, _ string, rawMsg am.RawMessage) (err error) {
+func (s *stream) Publish(ctx context.Context, _ string, rawMsg am.Message) (err error) {
 	var data []byte
 
-	data, err = proto.Marshal(&StreamMessage{
-		Id:   rawMsg.ID(),
-		Name: rawMsg.MessageName(),
-		Data: rawMsg.Data(),
-	})
+	metadata, err := structpb.NewStruct(rawMsg.Metadata())
 	if err != nil {
 		return err
+	}
+
+	data, err = proto.Marshal(&StreamMessage{
+		Id:       rawMsg.ID(),
+		Name:     rawMsg.MessageName(),
+		Data:     rawMsg.Data(),
+		Metadata: metadata,
+		SentAt:   timestamppb.New(rawMsg.SentAt()),
+	})
+	if err != nil {
+		return
 	}
 
 	var p jetstream.PubAckFuture
@@ -113,8 +124,12 @@ func (s *stream) Publish(ctx context.Context, _ string, rawMsg am.RawMessage) (e
 	return nil
 }
 
-func (s *stream) Subscribe(topicName string, handler am.RawMessageHandler, options ...am.SubscriberOption) error {
-	var err error
+var doNothing = func() error { return nil }
+
+func (s *stream) Subscribe(topicName string, handler am.MessageHandler, options ...am.SubscriberOption) (unsubscribe func() error, err error) {
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	subCfg := am.NewSubscriberConfig(options)
 
@@ -141,12 +156,12 @@ func (s *stream) Subscribe(topicName string, handler am.RawMessageHandler, optio
 
 	sm, err := s.js.Stream(ctx, s.streamName)
 	if err != nil {
-		return err
+		return doNothing, err
 	}
 
 	c, err := sm.CreateOrUpdateConsumer(ctx, cfg)
 	if err != nil {
-		return err
+		return doNothing, err
 	}
 	// Consume receives messages from the stream and calls the handler for each one.
 	// JetStream delivers messages sequentially to this callback,
@@ -156,14 +171,19 @@ func (s *stream) Subscribe(topicName string, handler am.RawMessageHandler, optio
 		s.handleMsg(subCfg, handler)(msg)
 	})
 	if err != nil {
-		return err
+		return doNothing, err
 	}
 	s.consumeCtxs = append(s.consumeCtxs, cc)
 
-	return nil
+	unsubscribe = func() error {
+		cc.Drain()
+		return nil
+	}
+
+	return unsubscribe, nil
 }
 
-func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler) func(jetstream.Msg) {
+func (s *stream) handleMsg(cfg am.SubscriberConfig, handler am.MessageHandler) func(jetstream.Msg) {
 	return func(natsMsg jetstream.Msg) {
 		var err error
 
@@ -304,7 +324,7 @@ const (
 	msgIDField   = "id"
 )
 
-func (s *stream) Unsubscribe() error {
+func (s *stream) UnsubscribeAll() error {
 	for _, ctx := range s.consumeCtxs {
 		ctx.Drain()
 	}

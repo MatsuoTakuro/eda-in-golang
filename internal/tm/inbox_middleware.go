@@ -10,7 +10,7 @@ import (
 )
 
 type InboxStore interface {
-	Save(ctx context.Context, msg am.RawMessage) error
+	Save(ctx context.Context, msg am.Message) error
 }
 
 func WithInboxHandler(store InboxStore) am.RawMessageHandlerMiddleware {
@@ -30,7 +30,7 @@ type inbox struct {
 
 var _ am.RawMessageHandler = (*inbox)(nil)
 
-func (i inbox) HandleMessage(ctx context.Context, msg am.AckableRawMessage) error {
+func (i inbox) HandleMessage(ctx context.Context, msg am.IncomingMessage) error {
 	// try to insert the message
 	err := i.store.Save(ctx, msg)
 	if err != nil {

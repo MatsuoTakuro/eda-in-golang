@@ -25,7 +25,7 @@ func NewInboxStore(tableName string, db DB) inboxStore {
 	}
 }
 
-func (s inboxStore) Save(ctx context.Context, msg am.RawMessage) error {
+func (s inboxStore) Save(ctx context.Context, msg am.Message) error {
 
 	if msg == nil {
 		return fmt.Errorf("inbox message cannot be nil")

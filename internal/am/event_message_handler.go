@@ -13,16 +13,20 @@ type eventMsgHandler struct {
 	handler ddd.EventHandler[ddd.Event]
 }
 
-var _ RawMessageHandler = (*eventMsgHandler)(nil)
+var _ MessageHandler = (*eventMsgHandler)(nil)
 
-func NewEventMessageHandler(reg registry.Registry, handler ddd.EventHandler[ddd.Event]) eventMsgHandler {
-	return eventMsgHandler{
+func NewEventMessageHandler(
+	reg registry.Registry,
+	handler ddd.EventHandler[ddd.Event],
+	mws ...MessageHandlerMiddleware,
+) MessageHandler {
+	return messageHandlerWithMiddleware(eventMsgHandler{
 		reg:     reg,
 		handler: handler,
-	}
+	}, mws...)
 }
 
-func (h eventMsgHandler) HandleMessage(ctx context.Context, msg AckableRawMessage) error {
+func (h eventMsgHandler) HandleMessage(ctx context.Context, msg IncomingMessage) error {
 	var eventData EventMessageData
 
 	err := proto.Unmarshal(msg.Data(), &eventData)
@@ -37,11 +41,11 @@ func (h eventMsgHandler) HandleMessage(ctx context.Context, msg AckableRawMessag
 		return err
 	}
 
+	// TODO either this should be a ddd.Event or the handler is a HandleMessage[am.EventMessage]
 	eventMsg := eventMessage{
 		id:         msg.ID(),
 		name:       eventName,
 		payload:    payload,
-		metadata:   eventData.GetMetadata().AsMap(),
 		occurredAt: eventData.GetOccurredAt().AsTime(),
 		msg:        msg,
 	}

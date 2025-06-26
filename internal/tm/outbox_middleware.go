@@ -9,8 +9,8 @@ import (
 )
 
 type OutboxStore interface {
-	Save(ctx context.Context, msg am.RawMessage) error
-	FindUnpublished(ctx context.Context, limit int) ([]am.RawMessage, error)
+	Save(ctx context.Context, msg am.Message) error
+	FindUnpublished(ctx context.Context, limit int) ([]am.Message, error)
 	MarkPublished(ctx context.Context, ids ...string) error
 }
 
@@ -31,7 +31,7 @@ type outbox struct {
 
 var _ am.RawMessageStream = (*outbox)(nil)
 
-func (o outbox) Publish(ctx context.Context, _ string, msg am.RawMessage) error {
+func (o outbox) Publish(ctx context.Context, _ string, msg am.Message) error {
 	err := o.store.Save(ctx, msg)
 
 	var errDupe ErrDuplicateMessage

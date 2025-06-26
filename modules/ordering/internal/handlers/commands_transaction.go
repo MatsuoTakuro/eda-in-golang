@@ -11,7 +11,7 @@ import (
 )
 
 func RegisterCommandHandlersTx(container di.Container) error {
-	cmdMsgHandlers := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.AckableRawMessage) (err error) {
+	cmdMsgHandlers := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingMessage) (err error) {
 		ctx = container.Scoped(ctx)
 		defer func(tx *sql.Tx) {
 			if p := recover(); p != nil {
