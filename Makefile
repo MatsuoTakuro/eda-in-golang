@@ -34,7 +34,7 @@ publish.pacts:
 
 test.all: publish.pacts
 	@echo "Running all tests..."
-	go test -tags="integration e2e" ./...
+	go test -tags="integration e2e contract" ./...
 	@echo "Tests completed."
 
 build.monolith:
