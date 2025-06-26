@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../Event-Driven-Architecture-in-Golang"
+		}
+	],
+  "settings": {}
+}
